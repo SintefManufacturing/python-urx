@@ -1,0 +1,21 @@
+Source: python-urx
+Section: python
+Priority: extra
+Maintainer: Olivier Roulet-Dubonnet <dummy@dummy.com>
+Build-Depends: debhelper (>= 8.0.0)
+Standards-Version: 3.9.3
+Homepage: http://launchpad.net/XXX
+X-Python-Version: >= 2.6
+X-Python3-Version: >= 3.1
+
+Package: python-urx
+Architecture: all
+Depends: ${python:Depends}, ${misc:Depends}
+Recommends: python-math3d
+Description: Python library to control a robot from Universal Robots 
+
+Package: python3-urx
+Architecture: all
+Depends: ${python3:Depends}, ${misc:Depends}
+Recommends: python3-math3d
+Description: Python library to control a robot from Universal Robots 
