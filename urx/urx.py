@@ -76,7 +76,7 @@ except ImportError:
     print("pymath3d library could not be found on this computer, disabling use of matrices")
 
 #import urrtmon #temproarely disabled
-from urx import urparser
+import urx.urparser as urparser
 
 
 class RobotException(Exception):
