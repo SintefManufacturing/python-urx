@@ -1,5 +1,5 @@
 """
-Python library to control an UR robot through its secondary port interface
+Python library to control an UR robot through its TCP/IP interface
 
 import urx
 
@@ -76,7 +76,7 @@ except ImportError:
     print("pymath3d library could not be found on this computer, disabling use of matrices")
 
 #import urrtmon #temproarely disabled
-import urparser
+from urx import urparser
 
 
 class RobotException(Exception):
@@ -216,7 +216,7 @@ class SecondaryMonitor(Thread):
         print(self.__class__.__name__, ": ", msg)
 
 
-class SimpleRobot(object):
+class URScript(object):
     """
     Python interface to socket interface of UR robot.
     programs are send to port 3002
@@ -390,7 +390,7 @@ class SimpleRobot(object):
             return None
         else:
             while True:
-                time.sleep(0.05)
+                time.sleep(0.05)# it is important to sleep since robot may takes a while to get into running state
                 if not self.isRunning():#FIXME add more tests
                     raise RobotException("Robot stopped")
                 currentjoints = self.getj()
@@ -428,7 +428,7 @@ class SimpleRobot(object):
             return None
         else:
             while True:
-                time.sleep(0.05)
+                time.sleep(0.05)# it is important to sleep since robot may takes a while to get into running state
                 if not self.isRunning():#FIXME add more tests
                     raise RobotException("Robot stopped")
                 pose = self.getl()
@@ -504,7 +504,7 @@ class Robot(object):
     and style portet to PEP 8 
     """
     def __init__(self, host, useRTInterface=False):
-        self.robot = SimpleRobot(host, useRTInterface)#since there are many depcreated methods in SimpleRobot it is cleaner not to inherit it
+        self.robot = URScript(host, useRTInterface)#since there are many depcreated methods in SimpleRobot it is cleaner not to inherit it
         self.default_linear_acceleration = 0.01
         self.default_linear_velocity = 0.01
 
@@ -577,6 +577,10 @@ class Robot(object):
         self.apply_transform(math3d.Transform(pose), acc, vel, wait)
 
     def movel_cnc(self, pose, acc=None, vel=None, wait=True):
+        """
+        One could implement a CNC like interface with ABC being euler angles
+        Not implemented yet
+        """
         pass
 
     def getl(self):
@@ -621,7 +625,7 @@ class Robot(object):
 
 
 if not MATH3D:
-    Robot = SimpleRobot
+    Robot = URScript
 
 if __name__ == "__main__":
     try:
