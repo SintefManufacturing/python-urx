@@ -1,1 +1,1 @@
-urx /usr/lib/python3/dist-packages
+urx/*.py /usr/lib/python3/dist-packages/urx

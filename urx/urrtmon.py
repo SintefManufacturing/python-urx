@@ -47,8 +47,6 @@ class URRTMonitor(threading.Thread):
         self._qTarget = None
         self._tcp = None
         self._tcp_force = None 
-        # self._fwkin = pymoco.kinematics.FrameComputer(
-        #    robotDef=pymoco.robot.getRobotType('UR6855A'))
 
     def __recv_bytes(self, nBytes):
         ''' Facility method for receiving exactly "nBytes" bytes from
@@ -108,7 +106,6 @@ class URRTMonitor(threading.Thread):
         if wait:
             self.wait()
         with self._dataAccess:
-            # tcf = self._fwkin(self._qActual)
             tcf = self._tcp
             if timestamp:
                 return self._timestamp, tcf
@@ -155,6 +152,17 @@ class URRTMonitor(threading.Thread):
         with self._dataEvent:
             self._dataEvent.notifyAll()
 
+    def get_all_data(self, wait=True):
+        """
+        return all data parsed from robot as dict
+        The content of the dict may vary depending on version of parser and robot controller
+        but their name should stay constant
+        """
+        if wait:
+            self.wait()
+        with self._dataAccess:
+            return dict(timestamp=self._timestamp, qActual=self._qActual, qTarget=self._qTarget, tcp=self._tcp, tcp_force=self._tcp_force)
+
     def stop(self):
         #print(self.__class__.__name__+': Stopping')
         self._stop = True
@@ -169,12 +177,6 @@ class URRTMonitor(threading.Thread):
         while not self._stop:
             self.__recv_rt_data()
         self._rtSock.close()
-
-def logDeviation(logDT=0.1):
-    np.set_printoptions(precision=4)
-    while True:
-        print urRTMon.getTarget()-urRTMon.getActual()
-        time.sleep(logDT)
 
 i = 1
 def dumptcp():
