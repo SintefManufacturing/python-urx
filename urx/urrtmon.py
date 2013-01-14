@@ -19,7 +19,6 @@ import socket
 import struct 
 import time
 import threading
-import datetime
 
 import numpy as np
 
@@ -47,6 +46,7 @@ class URRTMonitor(threading.Thread):
         self._qTarget = None
         self._tcp = None
         self._tcp_force = None 
+        self.__recvTime = 0
 
     def __recv_bytes(self, nBytes):
         ''' Facility method for receiving exactly "nBytes" bytes from
@@ -178,18 +178,8 @@ class URRTMonitor(threading.Thread):
             self.__recv_rt_data()
         self._rtSock.close()
 
-i = 1
-def dumptcp():
-    global i
-    tcf = urRTMon.getTcp()
-    pos = tcf[:3]
-    rot = tcf[3:]
-    filename = 'robot%d.txt'%i
-    print('Dumping file: %s (at time %s)' % (filename, str(datetime.datetime.now())))
-    f = file(filename,'w')
-    f.write((3*'%.5f ' + '\n' + 3*'%.5f ') % tuple(tcf))
-    i += 1
-    
+
+
 
 def startupInteractive():
     global urRTMon

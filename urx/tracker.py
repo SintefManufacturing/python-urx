@@ -1,7 +1,7 @@
 import time
 from multiprocessing import Process, Queue, Event
 
-from urx.urrtmon import URRTMonitor
+from urx import urrtmon
 
 
 class Tracker(Process):
@@ -18,7 +18,7 @@ class Tracker(Process):
 
     def run(self):
         self._log("Running")
-        rtmon = URRTMonitor(self.host)
+        rtmon = urrtmon.URRTMonitor(self.host)
         rtmon.start()
         while not self._stop.is_set():
             data = rtmon.get_all_data(wait=True)
@@ -36,7 +36,7 @@ class Tracker(Process):
     def get_result(self):
         self._stop.set()
         while not self._finished.is_set():
-            time.sleep(0.1)
+            time.sleep(0.01)
         return self._queue.get()
 
     def shutdown(self, join=True):

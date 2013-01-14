@@ -75,8 +75,9 @@ except ImportError:
     MATH3D = False
     print("pymath3d library could not be found on this computer, disabling use of matrices")
 
-#import urrtmon #temproarely disabled
-import urx.urparser as urparser
+from urx import urrtmon 
+from urx import urparser
+from urx import tracker
 
 
 class RobotException(Exception):
@@ -621,6 +622,12 @@ class Robot(object):
     
     def cleanup(self):
         self.robot.cleanup()
+
+    def get_tracker(self):
+        """
+        return an object able to track robot move for logging
+        """
+        return tracker.Tracker(self.robot.host)
 
 
 
