@@ -52,7 +52,7 @@ TODO:
     movec
 
 DOC LINK
-http://support.universal-robots.com/URScript/RemoteAccess
+http://support.universal-robots.com/URRobot/RemoteAccess
 """
 
 __author__ = "Olivier Roulet-Dubonnet"
@@ -109,7 +109,7 @@ class SecondaryMonitor(Thread):
 
     def sendProgram(self, prog):
         """
-        send program to robot in URScript format
+        send program to robot in URRobot format
         If another program is send while a program is running the first program is aborded. 
         """
 
@@ -217,11 +217,11 @@ class SecondaryMonitor(Thread):
         print(self.__class__.__name__, ": ", msg)
 
 
-class URScript(object):
+class URRobot(object):
     """
     Python interface to socket interface of UR robot.
     programs are send to port 3002
-    data is read from secondary intergace and realtime interface (called Matlab interface in documentation)
+    data is read from secondary interface(10Hz?) and real-time interface(125Hz) (called Matlab interface in documentation)
     Since parsing the RT interface uses som CPU, and does not support all robots versions, it is disabled by default
     The RT interfaces is only used for the getForce related methods
     Rmq: A program sent to the robot i executed immendiatly and any running program is stopped
@@ -382,7 +382,7 @@ class URScript(object):
 
     def movej(self, joints, acc=0.1, vel=0.05, wait=True):
         """
-        wrapper around the movej command in URScript
+        wrapper around the movej command in URRobot
         """
         #todo: should check joints input and velocity
         prog = "movej(%s, a=%s, v=%s)" % (list(joints), acc, vel)
@@ -418,7 +418,7 @@ class URScript(object):
     def movel(self, tpose, acc=0.01, vel=0.01, wait=True):
         """
         move in tool corrdinate system
-        wrapper around the movel command in URScript
+        wrapper around the movel command in URRobot
         """
         #todo: should check joints input and velocity
         tpose = [round(i, 2) for i in tpose]
@@ -499,13 +499,13 @@ class URScript(object):
 
 class Robot(object):
     """
-    Python interface to socket interface of UR robot.
-    Compare to the SimpleRobot class, this class adds the possibilty to work directly with matrices
+    Generic Python interface to an industrial robot.
+    Compare to the URRobot class, this class adds the possibilty to work directly with matrices
     and includes support for calibrating the robot coordinate system
     and style portet to PEP 8 
     """
     def __init__(self, host, useRTInterface=False):
-        self.robot = URScript(host, useRTInterface)#since there are many depcreated methods in SimpleRobot it is cleaner not to inherit it
+        self.robot = URRobot(host, useRTInterface)
         self.default_linear_acceleration = 0.01
         self.default_linear_velocity = 0.01
 
@@ -579,7 +579,7 @@ class Robot(object):
 
     def movel_cnc(self, pose, acc=None, vel=None, wait=True):
         """
-        One could implement a CNC like interface with ABC being euler angles
+        One could implement a CNC like interface with ABC like euler angles
         Not implemented yet
         """
         pass
@@ -607,7 +607,7 @@ class Robot(object):
 
     def movej(self, joints, acc=0.1, vel=0.05, wait=True):
         """
-        wrapper around the movej command in URScript
+        wrapper around the movej command in URRobot
         """
         self.robot.movej(joints, acc, vel, wait)
 
@@ -627,12 +627,14 @@ class Robot(object):
         """
         return an object able to track robot move for logging
         """
-        return tracker.Tracker(self.robot.host)
+        t = tracker.Tracker(self.robot.host)
+        t.set_calibration_matrix(self.calibration)
+        return t
 
 
 
 if not MATH3D:
-    Robot = URScript
+    Robot = URRobot
 
 if __name__ == "__main__":
     try:

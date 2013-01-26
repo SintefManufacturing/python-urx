@@ -2,6 +2,7 @@ import time
 from multiprocessing import Process, Queue, Event
 
 from urx import urrtmon
+from math3d import Transform
 
 
 class Tracker(Process):
@@ -12,9 +13,21 @@ class Tracker(Process):
         self._stop = Event()
         self._finished = Event()
         self._data = []
+        self.calibration = Transform()
+        self.inverse = self.calibration.inverse()
 
     def _log(self, *args):
         print(self.__class__.__name__, ": ".join([str(i) for i in args]))
+
+    def set_calibration_matrix(self, cal):
+        self.calibration = cal
+        self.inverse = self.calibration.inverse()
+
+    def _save_data(self):
+        for data in self._data:
+            data["transform"] = self.inverse * Transform(data["tcp"])
+        self._queue.put(self._data)
+
 
     def run(self):
         self._log("Running")
@@ -23,7 +36,7 @@ class Tracker(Process):
         while not self._stop.is_set():
             data = rtmon.get_all_data(wait=True)
             self._data.append(data)
-        self._queue.put(data)
+        self._save_data()
         self._finished.set()
         self._log("Closing")
 
