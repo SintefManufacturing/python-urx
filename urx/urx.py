@@ -228,8 +228,9 @@ class URRobot(object):
     The RT interfaces is only used for the getForce related methods
     Rmq: A program sent to the robot i executed immendiatly and any running program is stopped
     """
-    def __init__(self, host, useRTInterface=False):
+    def __init__(self, host, useRTInterface=False, debug=False):
         self.host = host
+        self.debug = debug
        
         self.secmon = SecondaryMonitor(self.host) #data from robot at 10Hz
         
@@ -414,7 +415,8 @@ class URRobot(object):
         """
         l = self.getl()
         newl = [v + l[i] for i, v in enumerate(tpose)]
-        #print "going to: ", newl
+        if self.debug:
+            print("going to: ", newl)
         return self.movel(newl, acc, vel, wait )
 
     def movel(self, tpose, acc=0.01, vel=0.01, wait=True):
@@ -425,7 +427,8 @@ class URRobot(object):
         #todo: should check joints input and velocity
         tpose = [round(i, 2) for i in tpose]
         prog = "movel(p%s, a=%s, v=%s)" % (tpose, acc, vel)
-        #print(prog)
+        if self.debug:
+            print("Sending: ", prog)
         self.sendProgram(prog)
         if not wait:
             return None
@@ -444,9 +447,10 @@ class URRobot(object):
         """
         pose = self.secmon.getCartesianInfo()
         if pose:
-            return [pose["X"], pose["Y"], pose["Z"], pose["Rx"], pose["Ry"], pose["Rz"]]
-        else:
-            return None
+            pose =  [pose["X"], pose["Y"], pose["Z"], pose["Rx"], pose["Ry"], pose["Rz"]]
+        if self.debug:
+            print("Got linear position from robot: ", pose)
+        return pose
 
     def movels(self, joints, acc, vel , radius, wait=True):
         """
@@ -506,13 +510,14 @@ class Robot(object):
     and includes support for calibrating the robot coordinate system
     and style portet to PEP 8 
     """
-    def __init__(self, host, useRTInterface=False):
-        self.robot = URRobot(host, useRTInterface)
+    def __init__(self, host, useRTInterface=False, debug=False):
+        self.robot = URRobot(host, useRTInterface, debug)
         self.default_linear_acceleration = 0.01
         self.default_linear_velocity = 0.01
 
         self.calibration = math3d.Transform() #identity
         self.inverse = self.calibration.inverse()
+        self.tracker = None
 
     def set_tcp(self, tcp):
         if type(tcp) == math3d.Transform:
@@ -574,10 +579,10 @@ class Robot(object):
 
     def movel(self, pose, acc=None, vel=None, wait=True):
         t = math3d.Transform(pose)
-        self.apply_transform(self.inverse * t, acc, vel, wait)
+        self.apply_transform(t, acc, vel, wait)
 
     def movelrel(self, pose, acc=None, vel=None, wait=True):
-        self.apply_transform(math3d.Transform(pose), acc, vel, wait)
+        self.add_transform(math3d.Transform(pose), acc, vel, wait)
 
     def movel_cnc(self, pose, acc=None, vel=None, wait=True):
         """
@@ -632,7 +637,6 @@ class Robot(object):
         t = tracker.Tracker(self.robot.host)
         t.set_calibration_matrix(self.calibration)
         return t
-
 
 
 if not MATH3D:
