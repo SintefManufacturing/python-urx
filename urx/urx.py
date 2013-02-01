@@ -68,6 +68,7 @@ __status__ = "Development"
 from threading import Thread, Lock, Condition
 import socket
 import time
+import logging
 
 
 MATH3D = True
@@ -92,6 +93,7 @@ class SecondaryMonitor(Thread):
     """
     def __init__(self, host):
         Thread.__init__(self)
+        self.logger = logging.getLogger(self.__class__.__name__)
         self._lock = Lock()
         self._s_secondary = None
         self._dict = {}
@@ -117,6 +119,7 @@ class SecondaryMonitor(Thread):
 
         with self._lock:
             prog.strip()
+            self.logger.debug("Sending program: prog")
             self._queue.append(prog.encode() + b"\n")
  
 
@@ -140,14 +143,12 @@ class SecondaryMonitor(Thread):
                 with self._dictLock:
                     self._dict = urparser.parse(data)
             except urparser.ParsingException as ex:
-                self._log("Error parsing data from urrobot: " + str(ex) )
+                self.logger.warn("Error parsing data from urrobot: " + str(ex) )
                 continue
 
             if "RobotModeData" not in self._dict:
-                self._log( "Got a packet from robot without RobotModeData, strange ...")
+                self.logger.warn( "Got a packet from robot without RobotModeData, strange ...")
                 continue
-
-            #print data["RobotModeData"]
 
             if self._dict["RobotModeData"]["robotMode"] == 0 \
                             and self._dict["RobotModeData"]["isRealRobotEnabled"] == True \
@@ -158,7 +159,7 @@ class SecondaryMonitor(Thread):
                 self.running = True
             else:
                 if self.running == True:
-                    print("Robot not running: ", self._dict["RobotModeData"])
+                    self.logger.error("Robot not running: " + str( self._dict["RobotModeData"]))
                 self.running = False
             with self._dataEvent:
                 self._dataEvent.notifyAll()
@@ -215,9 +216,6 @@ class SecondaryMonitor(Thread):
             with self._lock:
                 self._s_secondary.close()
 
-    def _log(self, msg):
-        print(self.__class__.__name__, ": ", msg)
-
 
 class URRobot(object):
     """
@@ -228,13 +226,15 @@ class URRobot(object):
     The RT interfaces is only used for the getForce related methods
     Rmq: A program sent to the robot i executed immendiatly and any running program is stopped
     """
-    def __init__(self, host, useRTInterface=False, debug=False):
+    def __init__(self, host, useRTInterface=False):
+        self.logger = logging.getLogger(self.__class__.__name__)
         self.host = host
-        self.debug = debug
-       
+        
+        self.logger.info("Opening secondary monitor socket")
         self.secmon = SecondaryMonitor(self.host) #data from robot at 10Hz
         
         if useRTInterface:
+            self.logger.info("Opening real-time monitor socket")
             self.rtmon = urrtmon.URRTMonitor(self.host)# som information is only available on rt interface
         else:
             self.rtmon = None
@@ -415,8 +415,6 @@ class URRobot(object):
         """
         l = self.getl()
         newl = [v + l[i] for i, v in enumerate(tpose)]
-        if self.debug:
-            print("going to: ", newl)
         return self.movel(newl, acc, vel, wait )
 
     def movel(self, tpose, acc=0.01, vel=0.01, wait=True):
@@ -427,8 +425,6 @@ class URRobot(object):
         #todo: should check joints input and velocity
         tpose = [round(i, 2) for i in tpose]
         prog = "movel(p%s, a=%s, v=%s)" % (tpose, acc, vel)
-        if self.debug:
-            print("Sending: ", prog)
         self.sendProgram(prog)
         if not wait:
             return None
@@ -448,8 +444,7 @@ class URRobot(object):
         pose = self.secmon.getCartesianInfo()
         if pose:
             pose =  [pose["X"], pose["Y"], pose["Z"], pose["Rx"], pose["Ry"], pose["Rz"]]
-        if self.debug:
-            print("Got linear position from robot: ", pose)
+        self.logger.debug("Current pose from robot: " + str(pose))
         return pose
 
     def movels(self, joints, acc, vel , radius, wait=True):
@@ -493,10 +488,8 @@ class URRobot(object):
                 return False
         return True
 
-    def _log(self, msg):
-        print("urrobot: ", self.__class__.__name__, ": ", msg)
-
     def cleanup(self):
+        self.logger.info("Closing sockets to robot")
         self.secmon.cleanup()
         if self.rtmon:
             self.rtmon.stop()
@@ -510,8 +503,10 @@ class Robot(object):
     and includes support for calibrating the robot coordinate system
     and style portet to PEP 8 
     """
-    def __init__(self, host, useRTInterface=False, debug=False):
-        self.robot = URRobot(host, useRTInterface, debug)
+    def __init__(self, host, useRTInterface=False):
+        self.robot = URRobot(host, useRTInterface)
+        self.logger = logging.getLogger(self.__class__.__name__)
+        logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
         self.default_linear_acceleration = 0.01
         self.default_linear_velocity = 0.01
 
@@ -654,7 +649,7 @@ if __name__ == "__main__":
         #p = r.sendProgram(open("examples/example.prog").read(), wait=False)
 
         from IPython.frontend.terminal.embed import InteractiveShellEmbed
-        ipshell = InteractiveShellEmbed( banner1="\nStarting IPython shell, robot object is available\n")
+        ipshell = InteractiveShellEmbed( banner1="\n\n  robot object is available  \n\n")
         ipshell(local_ns=locals())
 
     finally:
