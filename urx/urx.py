@@ -65,8 +65,6 @@ __status__ = "Development"
 
 
 
-from threading import Thread, Lock, Condition
-import socket
 import time
 import logging
 
@@ -79,142 +77,12 @@ except ImportError:
     print("pymath3d library could not be found on this computer, disabling use of matrices")
 
 from urx import urrtmon 
-from urx import urparser
+from urx import ursecmon
 from urx import tracker
 
 
 class RobotException(Exception):
     pass
-
-
-class SecondaryMonitor(Thread):
-    """
-    Monitor data from secondry port and send programs to robot
-    """
-    def __init__(self, host):
-        Thread.__init__(self)
-        self.logger = logging.getLogger(self.__class__.__name__)
-        self._lock = Lock()
-        self._s_secondary = None
-        self._dict = {}
-        self._dictLock = Lock()
-        self.host = host
-        secondary_port = 30002    # Secondary client interface on Universal Robots
-        self._s_secondary = socket.create_connection((self.host, secondary_port), timeout=0.5)
-        self._queue = []
-        self._dataqueue = bytes()
-        self._trystop = False # to stop thread
-        self.running = False #True when robot is on and listening
-        self._dataEvent = Condition()
-
-        self.start()
-        with self._dataEvent:
-            self._dataEvent.wait() # make sure we got some data before someone calls us
-
-    def sendProgram(self, prog):
-        """
-        send program to robot in URRobot format
-        If another program is send while a program is running the first program is aborded. 
-        """
-
-        with self._lock:
-            prog.strip()
-            self.logger.debug("Sending program: prog")
-            self._queue.append(prog.encode() + b"\n")
- 
-
-    def run(self):
-        """
-        check program execution status in the secondary client data packet we get from the robot 
-        This interface uses only data from the secondary client interface (see UR doc)
-        Only the last connected client is the primary client, 
-        so this is not guaranted and we cannot rely on information only 
-        send to the primary client(like program execution start ?!?!?)
-        """
-
-        while not self._trystop:
-            with self._lock:
-                if len(self._queue) > 0:
-                    prog = self._queue.pop(0)
-                    self._s_secondary.send(prog)
-            
-            data = self._get_data()
-            try:
-                with self._dictLock:
-                    self._dict = urparser.parse(data)
-            except urparser.ParsingException as ex:
-                self.logger.warn("Error parsing data from urrobot: " + str(ex) )
-                continue
-
-            if "RobotModeData" not in self._dict:
-                self.logger.warn( "Got a packet from robot without RobotModeData, strange ...")
-                continue
-
-            if self._dict["RobotModeData"]["robotMode"] == 0 \
-                            and self._dict["RobotModeData"]["isRealRobotEnabled"] == True \
-                            and self._dict["RobotModeData"]["isEmergencyStopped"] == False \
-                            and self._dict["RobotModeData"]["isSecurityStopped"] == False \
-                            and self._dict["RobotModeData"]["isRobotConnected"] == True \
-                            and self._dict["RobotModeData"]["isPowerOnRobot"] == True:
-                self.running = True
-            else:
-                if self.running == True:
-                    self.logger.error("Robot not running: " + str( self._dict["RobotModeData"]))
-                self.running = False
-            with self._dataEvent:
-                self._dataEvent.notifyAll()
-
-
-    def _get_data(self):
-        """
-        returns something that looks like a packet, nothing is guaranted
-        """
-        while True:
-            ans = urparser.find_first_packet(self._dataqueue[:])
-            if ans:
-                self._dataqueue = ans[1]
-                return ans[0]
-            else:
-                tmp = self._s_secondary.recv(1024)
-                self._dataqueue += tmp
-
-    def getCartesianInfo(self):
-        with self._dictLock:
-            if "CartesianInfo" in self._dict:
-                return self._dict["CartesianInfo"]
-            else:
-                return None
-
-    def getAllData(self):
-        """
-        return last data obtained from robot in dictionnary format
-        """
-        with self._dictLock:
-            return self._dict.copy()
-
-
-    def getJointData(self):
-        with self._dictLock:
-            if "JointData" in self._dict:
-                return self._dict["JointData"]
-            else:
-                return None
-
-    def isProgramRunning(self):
-        """
-        return True if robot is executing a program
-        Rmq: The refresh rate is only 10Hz so the information may be outdated
-        """
-        with self._dictLock:
-            return self._dict["RobotModeData"]["isProgramRunning"]
-
-
-    def cleanup(self):
-        self._trystop = True
-        self.join()
-        if self._s_secondary:
-            with self._lock:
-                self._s_secondary.close()
 
 
 class URRobot(object):
@@ -231,7 +99,7 @@ class URRobot(object):
         self.host = host
         
         self.logger.info("Opening secondary monitor socket")
-        self.secmon = SecondaryMonitor(self.host) #data from robot at 10Hz
+        self.secmon = ursecmon.SecondaryMonitor(self.host) #data from robot at 10Hz
         
         if useRTInterface:
             self.logger.info("Opening real-time monitor socket")
