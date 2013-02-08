@@ -227,16 +227,12 @@ class URRobot(object):
         else:
             return 0
 
-
-
-
     def setAnalogOut(self, output, val):
         """
         set analog output, val is a float
         """
         prog = "set_analog_output(%s, %s)" % (output, val) 
         self.secmon.sendProgram(prog)
-
 
     def setToolVoltage(self, val):
         """
@@ -378,7 +374,6 @@ class Robot(object):
         self.logger = logging.getLogger(self.__class__.__name__)
         if len(logging.root.handlers) == 0: #dirty hack
             logging.basicConfig()
-        logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
         self.default_linear_acceleration = 0.01
         self.default_linear_velocity = 0.01
 
@@ -510,15 +505,11 @@ if not MATH3D:
     Robot = URRobot
 
 if __name__ == "__main__":
+    logging.basicConfig(level=logging.INFO) #enable logging
     try:
         #robot = Robot( '192.168.1.6')
         robot = Robot( '192.168.1.5')
         r = robot
-
-        #robot = Robot( '192.168.1.2', useRTInterface=False)
-        #robot = Robot( '192.168.1.216')
-        #robot = Robot( '192.168.1.216')
-        #p = r.sendProgram(open("examples/example.prog").read(), wait=False)
 
         from IPython.frontend.terminal.embed import InteractiveShellEmbed
         ipshell = InteractiveShellEmbed( banner1="\n\n  robot object is available  \n\n")
