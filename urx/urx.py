@@ -96,6 +96,8 @@ class URRobot(object):
     """
     def __init__(self, host, useRTInterface=False):
         self.logger = logging.getLogger(self.__class__.__name__)
+        if len(logging.root.handlers) == 0: #dirty hack
+            logging.basicConfig()
         self.host = host
         
         self.logger.info("Opening secondary monitor socket")
@@ -269,11 +271,11 @@ class URRobot(object):
                 if self._eq(currentjoints, joints) and not self.secmon.isProgramRunning(): 
                     return currentjoints
 
-    def getj(self):
+    def getj(self, wait=False):
         """
         get joints position
         """
-        jts = self.secmon.getJointData()
+        jts = self.secmon.getJointData(wait)
         return [jts["q_actual0"], jts["q_actual1"], jts["q_actual2"], jts["q_actual3"], jts["q_actual4"], jts["q_actual5"]]
 
     
@@ -297,19 +299,19 @@ class URRobot(object):
         if not wait:
             return None
         else:
+            time.sleep(0.05)# it is important to sleep since robot may takes a while to get into running state
             while True:
-                time.sleep(0.05)# it is important to sleep since robot may takes a while to get into running state
                 if not self.isRunning():#FIXME add more tests
                     raise RobotException("Robot stopped")
-                pose = self.getl()
+                pose = self.getl(wait=True)
                 if self._eqpose(pose, tpose) and not self.secmon.isProgramRunning(): 
                     return pose
 
-    def getl(self):
+    def getl(self, wait=False):
         """
         get TCP position
         """
-        pose = self.secmon.getCartesianInfo()
+        pose = self.secmon.getCartesianInfo(wait)
         if pose:
             pose =  [pose["X"], pose["Y"], pose["Z"], pose["Rx"], pose["Ry"], pose["Rz"]]
         self.logger.debug("Current pose from robot: " + str(pose))
@@ -374,6 +376,8 @@ class Robot(object):
     def __init__(self, host, useRTInterface=False):
         self.robot = URRobot(host, useRTInterface)
         self.logger = logging.getLogger(self.__class__.__name__)
+        if len(logging.root.handlers) == 0: #dirty hack
+            logging.basicConfig()
         logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
         self.default_linear_acceleration = 0.01
         self.default_linear_velocity = 0.01
@@ -427,17 +431,17 @@ class Robot(object):
         pose = self.get_transform()
         return self.apply_transform(trans * pose, acc, vel, wait)
 
-    def get_transform(self):
-        pose = self.robot.getl()
+    def get_transform(self, wait=False):
+        pose = self.robot.getl(wait)
         trans = self.inverse * math3d.Transform(pose) 
         return trans
 
-    def get_orientation(self):
-        trans  = self.get_transform()
+    def get_orientation(self, wait=False):
+        trans  = self.get_transform(wait)
         return trans.orient
 
-    def get_pos(self):
-        trans  = self.get_transform()
+    def get_pos(self, wait=False):
+        trans  = self.get_transform(wait)
         return trans.pos
 
     def movel(self, pose, acc=None, vel=None, wait=True):
@@ -454,8 +458,8 @@ class Robot(object):
         """
         pass
 
-    def getl(self):
-        t = self.get_transform()
+    def getl(self, wait=False):
+        t = self.get_transform(wait)
         return t.pose_vector
 
     def is_running(self):
@@ -481,8 +485,8 @@ class Robot(object):
         """
         self.robot.movej(joints, acc, vel, wait)
 
-    def getj(self):
-        return self.robot.getj()
+    def getj(self, wait=False):
+        return self.robot.getj(wait)
 
     def movejrel(self, joints, acc=0.1, vel=0.05, wait=True):
         """

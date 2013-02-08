@@ -193,7 +193,7 @@ class SecondaryMonitor(Thread):
         self._dataEvent = Condition()
 
         self.start()
-        self._dataEvent.wait() # make sure we got some data before someone calls us
+        self.wait()# make sure we got some data before someone calls us
 
     def sendProgram(self, prog):
         """
@@ -226,7 +226,7 @@ class SecondaryMonitor(Thread):
                 with self._dictLock:
                     self._dict = self._parser.parse(data)
             except ParsingException as ex:
-                self.logger.warn("Error parsing data from urrobot: " + str(ex) )
+                self.logger.warn("Error parsing one packet from urrobot: " + str(ex) )
                 continue
 
             if "RobotModeData" not in self._dict:
@@ -244,7 +244,8 @@ class SecondaryMonitor(Thread):
                 if self.running == True:
                     self.logger.error("Robot not running: " + str( self._dict["RobotModeData"]))
                 self.running = False
-            self._dataEvent.notifyAll()
+            with self._dataEvent:
+                self._dataEvent.notifyAll()
 
     def _get_data(self):
         """
@@ -259,33 +260,46 @@ class SecondaryMonitor(Thread):
                 tmp = self._s_secondary.recv(1024)
                 self._dataqueue += tmp
 
-    def getCartesianInfo(self):
+    def wait(self):
+        """
+        wait for next data packet from robot
+        """
+
+    def getCartesianInfo(self, wait=False):
+        if wait:
+            self.wait()
         with self._dictLock:
             if "CartesianInfo" in self._dict:
                 return self._dict["CartesianInfo"]
             else:
                 return None
 
-    def getAllData(self):
+    def getAllData(self, wait=False):
         """
         return last data obtained from robot in dictionnary format
         """
+        if wait:
+            self.wait()
         with self._dictLock:
             return self._dict.copy()
 
 
-    def getJointData(self):
+    def getJointData(self, wait=False):
+        if wait:
+            self.wait()
         with self._dictLock:
             if "JointData" in self._dict:
                 return self._dict["JointData"]
             else:
                 return None
 
-    def isProgramRunning(self):
+    def isProgramRunning(self, wait=False):
         """
         return True if robot is executing a program
         Rmq: The refresh rate is only 10Hz so the information may be outdated
         """
+        if wait:
+            self.wait()
         with self._dictLock:
             return self._dict["RobotModeData"]["isProgramRunning"]
 
