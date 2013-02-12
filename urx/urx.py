@@ -47,10 +47,6 @@ o = robot.get_orientation()
 o.rotate_yb(pi)
 robot.orient(o)
 
-TODO:
-    add more methods
-    movec
-
 DOC LINK
 http://support.universal-robots.com/URRobot/RemoteAccess
 """
@@ -259,11 +255,11 @@ class URRobot(object):
         if not wait:
             return None
         else:
+            time.sleep(0.05)# it is important to sleep since robot may takes a while to get into running state
             while True:
-                time.sleep(0.05)# it is important to sleep since robot may takes a while to get into running state
-                if not self.isRunning():#FIXME add more tests
+                if not self.isRunning():
                     raise RobotException("Robot stopped")
-                currentjoints = self.getj()
+                currentjoints = self.getj(wait=True)
                 if self._eq(currentjoints, joints) and not self.secmon.isProgramRunning(): 
                     return currentjoints
 
@@ -297,7 +293,7 @@ class URRobot(object):
         else:
             time.sleep(0.05)# it is important to sleep since robot may takes a while to get into running state
             while True:
-                if not self.isRunning():#FIXME add more tests
+                if not self.isRunning():
                     raise RobotException("Robot stopped")
                 pose = self.getl(wait=True)
                 if self._eqpose(pose, tpose) and not self.secmon.isProgramRunning(): 
@@ -318,6 +314,7 @@ class URRobot(object):
         where joints is a list of list. dvs: several movel commands must be send as one program in order for radius blending to work.
         This is could easily be implemented in movel by detecting type of the joint variable
         """
+        # can be implemented by sending a complete urscript program calling several movel in a row with a radius
         raise NotImplementedError
     
     def stopl(self, acc = 0.5):
@@ -422,9 +419,19 @@ class Robot(object):
         if pose: #movel does not return anything when wait is False
             return self.inverse * math3d.Transform(pose)
 
-    def add_transform(self, trans, acc=None, vel=None, wait=True):
+    def add_transform_b(self, trans, acc=None, vel=None, wait=True):
+        """
+        Add transform expressed in base coordinate
+        """
         pose = self.get_transform()
         return self.apply_transform(trans * pose, acc, vel, wait)
+
+    def add_transform_t(self, trans, acc=None, vel=None, wait=True):
+        """
+        Add transform expressed in tool coordinate
+        """
+        pose = self.get_transform()
+        return self.apply_transform(pose * trans, acc, vel, wait)
 
     def get_transform(self, wait=False):
         pose = self.robot.getl(wait)
@@ -440,18 +447,24 @@ class Robot(object):
         return trans.pos
 
     def movel(self, pose, acc=None, vel=None, wait=True):
+        """
+        move linear to given pose in base coordinate
+        """
         t = math3d.Transform(pose)
         self.apply_transform(t, acc, vel, wait)
 
-    def movelrel(self, pose, acc=None, vel=None, wait=True):
-        self.add_transform(math3d.Transform(pose), acc, vel, wait)
+    def movel_tool(self, pose, acc=None, vel=None, wait=True):
+        """
+        move linear to given pose in tool coordinate
+        """
+        t = math3d.Transform(pose)
+        self.add_transform_t(t, acc, vel, wait)
 
-    def movel_cnc(self, pose, acc=None, vel=None, wait=True):
+    def movelrel(self, pose, acc=None, vel=None, wait=True):
         """
-        One could implement a CNC like interface with ABC like euler angles
-        Not implemented yet
+        move linear to given pose in base coordinate at tool point
         """
-        pass
+        self.add_transform_b(math3d.Transform(pose), acc, vel, wait)
 
     def getl(self, wait=False):
         t = self.get_transform(wait)
