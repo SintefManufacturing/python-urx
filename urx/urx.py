@@ -112,6 +112,7 @@ class URRobot(object):
             self.rtmon.start()
 
         self.start_pose = [1.57, -1.77, 1.57, -1.8, -1.57, -1.57]
+        self.secmon.wait() # make sure we get data to not suprise clients
         
 
     def __repr__(self):
@@ -204,12 +205,32 @@ class URRobot(object):
         data = self.secmon.getAllData()
         return data["MasterBoardData"]["analogInput0"], data["MasterBoardData"]["analogInput1"]
 
-    def getDigitalOutputBits(self):
+
+    def getAnalogInput(self, nb):
+        """
+        get analog input 
+        """
+        data = self.secmon.getAllData()
+        return data["MasterBoardData"]["analogInput" + str(nb)]
+
+    def getDigitalInputBits(self):
         """
         get digital output
         """
         data = self.secmon.getAllData()
-        return data["MasterBoardData"]["digitalOutputBits"]
+        return data["MasterBoardData"]["digitalInputBits"]
+
+    def getDigitalInput(self, nb):
+        """
+        get digital output
+        """
+        data = self.secmon.getAllData()
+        val = data["MasterBoardData"]["digitalInputBits"]
+        mask = 1 << nb
+        if  (val & mask):
+            return 1
+        else:
+            return 0
 
     def getDigitalOutput(self, val):
         """
@@ -241,15 +262,15 @@ class URRobot(object):
         """
         relative joint move
         """
-        l = self.getj()
-        newl = [v + l[i] for i, v in enumerate(joints)]
-        return self.movej(newl, acc, vel, wait )
+        self.movej(joints, acc, vel, wait, relative=True)
 
-    def movej(self, joints, acc=0.1, vel=0.05, wait=True):
+    def movej(self, joints, acc=0.1, vel=0.05, wait=True, relative=False):
         """
-        wrapper around the movej command in URRobot
+        move in joint space
         """
-        #todo: should check joints input and velocity
+        if relative:
+            l = self.getj()
+            joints = [v + l[i] for i, v in enumerate(joints)]
         prog = "movej(%s, a=%s, v=%s)" % (list(joints), acc, vel)
         self.sendProgram(prog)
         if not wait:
@@ -273,18 +294,17 @@ class URRobot(object):
     
     def movelrel(self, tpose, acc=0.01, vel=0.01, wait=True):
         """
-        relative move in cartesian coordinate
+        relative linear move 
         """
-        l = self.getl()
-        newl = [v + l[i] for i, v in enumerate(tpose)]
-        return self.movel(newl, acc, vel, wait )
+        return self.movel(tpose, acc, vel, wait, relative=True)
 
-    def movel(self, tpose, acc=0.01, vel=0.01, wait=True):
+    def movel(self, tpose, acc=0.01, vel=0.01, wait=True, relative=False):
         """
-        move in tool corrdinate system
-        wrapper around the movel command in URRobot
+        linear move 
         """
-        #todo: should check joints input and velocity
+        if relative:
+            l = self.getl()
+            tpose = [v + l[i] for i, v in enumerate(tpose)]
         tpose = [round(i, 2) for i in tpose]
         prog = "movel(p%s, a=%s, v=%s)" % (tpose, acc, vel)
         self.sendProgram(prog)
@@ -446,12 +466,15 @@ class Robot(object):
         trans  = self.get_transform(wait)
         return trans.pos
 
-    def movel(self, pose, acc=None, vel=None, wait=True):
+    def movel(self, pose, acc=None, vel=None, wait=True, relative=False):
         """
         move linear to given pose in base coordinate
         """
         t = math3d.Transform(pose)
-        self.apply_transform(t, acc, vel, wait)
+        if relative:
+            self.add_transform_b(t, acc, vel, wait)
+        else:
+            self.apply_transform(t, acc, vel, wait)
 
     def movel_tool(self, pose, acc=None, vel=None, wait=True):
         """
@@ -459,12 +482,6 @@ class Robot(object):
         """
         t = math3d.Transform(pose)
         self.add_transform_t(t, acc, vel, wait)
-
-    def movelrel(self, pose, acc=None, vel=None, wait=True):
-        """
-        move linear to given pose in base coordinate at tool point
-        """
-        self.add_transform_b(math3d.Transform(pose), acc, vel, wait)
 
     def getl(self, wait=False):
         t = self.get_transform(wait)
@@ -485,23 +502,26 @@ class Robot(object):
         return self.robot.setGravity(vector)
 
     def set_digital_out(self, output, val):
-        self.robot.setDigitalOut(output, val)
+        return self.robot.setDigitalOut(output, val)
 
-    def movej(self, joints, acc=0.1, vel=0.05, wait=True):
+    def get_digital_out(self, nb):
+        self.robot.getDigitalOutput(nb)
+
+    def get_digital_in(self, nb):
+        return self.robot.getDigitalInput(nb)
+
+    def get_analog_in(self, nb):
+        return self.robot.getAnalogInput(nb)
+
+    def movej(self, joints, acc=0.1, vel=0.05, wait=True, relative=False):
         """
         wrapper around the movej command in URRobot
         """
-        self.robot.movej(joints, acc, vel, wait)
+        self.robot.movej(joints, acc, vel, wait, relative)
 
     def getj(self, wait=False):
         return self.robot.getj(wait)
 
-    def movejrel(self, joints, acc=0.1, vel=0.05, wait=True):
-        """
-        relative joint move
-        """
-        self.robot.movejrel(joints, acc, vel, wait)
-    
     def cleanup(self):
         self.robot.cleanup()
 

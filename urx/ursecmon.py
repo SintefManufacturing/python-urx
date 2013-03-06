@@ -264,6 +264,8 @@ class SecondaryMonitor(Thread):
         """
         wait for next data packet from robot
         """
+        with self._dataEvent:
+            self._dataEvent.wait()
 
     def getCartesianInfo(self, wait=False):
         if wait:
