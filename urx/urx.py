@@ -515,6 +515,18 @@ class Robot(object):
     def get_analog_in(self, nb):
         return self.robot.getAnalogInput(nb)
 
+    def set_freedrive(self, val):
+        if val:
+            self.robot.sendProgram("set robotmode freedrive")
+        else:
+            self.robot.sendProgram("set robotmode run")
+
+    def set_simulation(self, val):
+        if val:
+            self.robot.sendProgram("set sim")
+        else:
+            self.robot.sendProgram("set real")
+
     def movej(self, joints, acc=0.1, vel=0.05, wait=True, relative=False):
         """
         wrapper around the movej command in URRobot
