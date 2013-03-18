@@ -378,6 +378,18 @@ class URRobot(object):
         if self.rtmon:
             self.rtmon.stop()
 
+    def set_freedrive(self, val):
+        if val:
+            self.sendProgram("set robotmode freedrive")
+        else:
+            self.sendProgram("set robotmode run")
+
+    def set_simulation(self, val):
+        if val:
+            self.sendProgram("set sim")
+        else:
+            self.sendProgram("set real")
+
 
 
 class Robot(object):
@@ -516,17 +528,11 @@ class Robot(object):
         return self.robot.getAnalogInput(nb)
 
     def set_freedrive(self, val):
-        if val:
-            self.robot.sendProgram("set robotmode freedrive")
-        else:
-            self.robot.sendProgram("set robotmode run")
+        self.robot.set_freedrive(val)
 
     def set_simulation(self, val):
-        if val:
-            self.robot.sendProgram("set sim")
-        else:
-            self.robot.sendProgram("set real")
-
+        self.robot.set_simulation(val)
+ 
     def movej(self, joints, acc=0.1, vel=0.05, wait=True, relative=False):
         """
         wrapper around the movej command in URRobot
