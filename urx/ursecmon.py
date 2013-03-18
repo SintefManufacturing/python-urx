@@ -29,8 +29,9 @@ class ParsingException(Exception):
 
 
 class ParserUtils(object):
-    def __init__(self):
+    def __init__(self, logLevel=logging.WARN):
         self.logger = logging.getLogger(__name__)
+        self.logger.setLevel(logLevel)
 
     def parse(self, data):
         """
@@ -62,6 +63,11 @@ class ParserUtils(object):
             elif ptype == 2:
                 allData["ToolData"] = self._get_data(pdata, "iBbbddfBffB" , ("size", "type", "analoginputRange2", "analoginputRange3", "analogInput2", "analogInput3", "toolVoltage48V", "toolOutputVoltage", "toolCurrent", "toolTemperature", "toolMode" ))
 
+            #elif ptype == 8:
+                    #allData["varMessage"] = self._get_data(pdata, "!iBQbb iiBAcAc", ("size", "type", "timestamp", "source", "robotMessageType", "code", "argument", "titleSize", "messageTitle", "messageText"))
+            #elif ptype == 7:
+                    #allData["keyMessage"] = self._get_data(pdata, "!iBQbb iiBAcAc", ("size", "type", "timestamp", "source", "robotMessageType", "code", "argument", "titleSize", "messageTitle", "messageText"))
+
             elif ptype == 20:
                 tmp = self._get_data(pdata, "!iB Qbb", ("size", "type", "timestamp", "source", "robotMessageType"))
                 if tmp["robotMessageType"] == 3:
@@ -81,9 +87,9 @@ class ParserUtils(object):
                 elif tmp["robotMessageType"] == 5:
                     allData["keyMessage"] = self._get_data(pdata, "!iBQbb iiAc", ("size", "type", "timestamp", "source", "robotMessageType", "code", "argument", "messageText"))
                 else:
-                    print("Message type parser not implemented ", tmp)
+                    self.logger.debug("Message type parser not implemented ", tmp)
             else:
-                print("Uknown packet type %s with size %s" % (ptype, psize))
+                self.logger.debug("Unknown packet type %s with size %s" % (ptype, psize))
 
         return allData
 
@@ -156,17 +162,21 @@ class ParserUtils(object):
         while True:
             if len(data) >= 5:
                 psize, ptype = self.get_header(data)
-                if psize < 5 or psize > 500 or ptype != 16:
+                if psize < 5 or psize > 2000 or ptype != 16:
                     data = data[1:]
-                elif len(data) > psize:
+                    counter += 1
+                elif len(data) >= psize:
+                    self.logger.debug("Got packet with size {0} and type {1}".format(psize, ptype))
                     if counter:
-                        self.logger.info("Remove {} bytes of garbage at begining of packet".format(counter))
+                        self.logger.info("Remove {0} bytes of garbage at begining of packet".format(counter))
                     #ok we we have somehting which looks like a packet"
                     return (data[:psize], data[psize:])
                 else:
                     #packet is not complete
+                    self.logger.debug("Packet is not complete, advertised size is {0}, received size is {1}, type is {2}".format(psize, len(data), ptype))
                     return None
             else:
+                self.logger.debug("data smaller than 5 bytes")
                 return None
 
 
@@ -175,10 +185,11 @@ class SecondaryMonitor(Thread):
     """
     Monitor data from secondary port and send programs to robot
     """
-    def __init__(self, host):
+    def __init__(self, host, logLevel=logging.WARN):
         Thread.__init__(self)
         self.logger = logging.getLogger(self.__class__.__name__)
-        self._parser = ParserUtils()
+        self.logger.setLevel(logLevel)
+        self._parser = ParserUtils(logLevel)
         self._s_secondary = None
         self._dict = {}
         self._dictLock = Lock()
@@ -257,6 +268,7 @@ class SecondaryMonitor(Thread):
                 self._dataqueue = ans[1]
                 return ans[0]
             else:
+                self.logger.debug("Could not find packet in received data")
                 tmp = self._s_secondary.recv(1024)
                 self._dataqueue += tmp
 

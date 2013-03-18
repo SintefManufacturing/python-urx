@@ -90,14 +90,15 @@ class URRobot(object):
     The RT interfaces is only used for the getForce related methods
     Rmq: A program sent to the robot i executed immendiatly and any running program is stopped
     """
-    def __init__(self, host, useRTInterface=False):
+    def __init__(self, host, useRTInterface=False, logLevel=logging.WARN):
         self.logger = logging.getLogger(self.__class__.__name__)
         if len(logging.root.handlers) == 0: #dirty hack
             logging.basicConfig()
+        self.logger.setLevel(logLevel)
         self.host = host
         
         self.logger.info("Opening secondary monitor socket")
-        self.secmon = ursecmon.SecondaryMonitor(self.host) #data from robot at 10Hz
+        self.secmon = ursecmon.SecondaryMonitor(self.host, logLevel=logLevel) #data from robot at 10Hz
         
         if useRTInterface:
             self.logger.info("Opening real-time monitor socket")
@@ -386,11 +387,12 @@ class Robot(object):
     and includes support for calibrating the robot coordinate system
     and style portet to PEP 8 
     """
-    def __init__(self, host, useRTInterface=False):
-        self.robot = URRobot(host, useRTInterface)
+    def __init__(self, host, useRTInterface=False, logLevel = logging.WARN):
+        self.robot = URRobot(host, useRTInterface, logLevel=logLevel)
         self.logger = logging.getLogger(self.__class__.__name__)
         if len(logging.root.handlers) == 0: #dirty hack
             logging.basicConfig()
+        self.logger.setLevel(logLevel)
         self.default_linear_acceleration = 0.01
         self.default_linear_velocity = 0.01
 
@@ -476,7 +478,7 @@ class Robot(object):
         else:
             self.apply_transform(t, acc, vel, wait)
 
-    def movel_tool(self, pose, acc=None, vel=None, wait=True):
+    def movel_t(self, pose, acc=None, vel=None, wait=True):
         """
         move linear to given pose in tool coordinate
         """
