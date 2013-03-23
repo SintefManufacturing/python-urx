@@ -40,7 +40,7 @@ class URRobot(object):
     programs are send to port 3002
     data is read from secondary interface(10Hz?) and real-time interface(125Hz) (called Matlab interface in documentation)
     Since parsing the RT interface uses som CPU, and does not support all robots versions, it is disabled by default
-    The RT interfaces is only used for the getForce related methods
+    The RT interfaces is only used for the get_force related methods
     Rmq: A program sent to the robot i executed immendiatly and any running program is stopped
     """
     def __init__(self, host, useRTInterface=False, logLevel=logging.WARN):
@@ -75,28 +75,28 @@ class URRobot(object):
     def __str__(self):
         return self.__repr__()
 
-    def isRunning(self): # legacy
+    def is_running(self): # legacy
         return self.secmon.running
 
-    def isProgramRunning(self):
-        return self.secmon.isProgramRunning()
+    def is_program_running(self):
+        return self.secmon.is_program_running()
 
-    def sendProgram(self, prog):
-        self.secmon.sendProgram(prog)
+    def send_program(self, prog):
+        self.secmon.send_program(prog)
 
-    def getTCPForce(self, wait=True):
+    def get_tcp_force(self, wait=True):
         """
         return measured force in TCP
         if wait==True, waits for next packet before returning
         """
         return self.rtmon.getTCFForce(wait)
 
-    def getForce(self, wait=True):
+    def get_force(self, wait=True):
         """
-        length of force vector returned by getTCPForce
+        length of force vector returned by get_tcp_force
         if wait==True, waits for next packet before returning
         """
-        tcpf = self.getTCPForce( wait)
+        tcpf = self.get_tcp_force( wait)
         force = 0
         for i in tcpf:
             force += i**2
@@ -108,7 +108,7 @@ class URRobot(object):
         """
         self.movej(self.start_pose)
 
-    def setTcp(self, x=0, y=0, z=0, a=0, b=0, c=0):
+    def set_tcp(self, x=0, y=0, z=0, a=0, b=0, c=0):
         """
         """
         if type(x) in (list, tuple):
@@ -119,30 +119,30 @@ class URRobot(object):
         else:
             arg = (x, y, z, a, b, c)
         prog = "set_tcp(p[%s, %s, %s, %s, %s, %s])" % arg
-        self.secmon.sendProgram(prog)
+        self.secmon.send_program(prog)
 
-    def setPayload(self, weight):
+    def set_payload(self, weight):
         """
         set payload in Kg
         """
         prog = "set_payload(%s)" % weight 
-        self.secmon.sendProgram(prog)
+        self.secmon.send_program(prog)
 
-    def setGravity(self, vector):
+    def set_gravity(self, vector):
         """
         set direction of gravity
         """
         prog = "set_gravity(%s)" % list(vector) 
-        self.secmon.sendProgram(prog)
+        self.secmon.send_program(prog)
 
-    def sendMessage(self, msg):
+    def send_message(self, msg):
         """
         send message to the GUI log tab on the robot controller
         """
         prog = "textmsg(%s)" % msg 
-        self.secmon.sendProgram(prog)
+        self.secmon.send_program(prog)
 
-    def setDigitalOut(self, output, val):
+    def set_digital_out(self, output, val):
         """
         set digital output. val is a bool
         """
@@ -150,9 +150,9 @@ class URRobot(object):
             val = "True"
         else:
             val = "False"
-        self.secmon.sendProgram('digital_out[%s]=%s' % (output, val))
+        self.secmon.send_program('digital_out[%s]=%s' % (output, val))
 
-    def getAnalogInputs(self):
+    def get_analog_inputs(self):
         """
         get analog input 
         """
@@ -160,21 +160,21 @@ class URRobot(object):
         return data["MasterBoardData"]["analogInput0"], data["MasterBoardData"]["analogInput1"]
 
 
-    def getAnalogInput(self, nb):
+    def get_analog_in(self, nb):
         """
         get analog input 
         """
         data = self.secmon.getAllData()
         return data["MasterBoardData"]["analogInput" + str(nb)]
 
-    def getDigitalInputBits(self):
+    def get_digital_inBits(self):
         """
         get digital output
         """
         data = self.secmon.getAllData()
         return data["MasterBoardData"]["digitalInputBits"]
 
-    def getDigitalInput(self, nb):
+    def get_digital_in(self, nb):
         """
         get digital output
         """
@@ -203,20 +203,14 @@ class URRobot(object):
         set analog output, val is a float
         """
         prog = "set_analog_output(%s, %s)" % (output, val) 
-        self.secmon.sendProgram(prog)
+        self.secmon.send_program(prog)
 
     def setToolVoltage(self, val):
         """
         set voltage to be delivered to the tool, val is 0, 12 or 24
         """
         prog = "set_tool_voltage(%s)" % (val) 
-        self.secmon.sendProgram(prog)
-
-    def movejrel(self, joints, acc=0.1, vel=0.05, wait=True):
-        """
-        relative joint move
-        """
-        self.movej(joints, acc, vel, wait, relative=True)
+        self.secmon.send_program(prog)
 
     def movej(self, joints, acc=0.1, vel=0.05, wait=True, relative=False):
         """
@@ -226,31 +220,33 @@ class URRobot(object):
             l = self.getj()
             joints = [v + l[i] for i, v in enumerate(joints)]
         prog = "movej(%s, a=%s, v=%s)" % (list(joints), acc, vel)
-        self.sendProgram(prog)
+        self.send_program(prog)
         if not wait:
             return None
         else:
-            time.sleep(0.05)# it is important to sleep since robot may takes a while to get into running state
-            while True:
-                if not self.isRunning():
-                    raise RobotException("Robot stopped")
-                currentjoints = self.getj(wait=True)
-                if self._eq(currentjoints, joints) and not self.secmon.isProgramRunning(): 
-                    return currentjoints
+            self.wait_for_move()
+            return self.getj()
 
+    def wait_for_move(self):
+        time.sleep(0.05)# it is important to sleep since robot may takes a while to get into running state
+        while True:
+            if not self.is_running():
+                raise RobotException("Robot stopped")
+            jts = self.secmon.getJointData(wait=True)
+            finished = True
+            for i in range(0, 6):
+                if abs(jts["q_actual%s"%i] - jts["q_targets%s"%i]) > self.radialEpsilon:
+                    finished = False
+                    break
+                if finished and not self.secmon.is_program_running():
+                    return
+ 
     def getj(self, wait=False):
         """
         get joints position
         """
         jts = self.secmon.getJointData(wait)
         return [jts["q_actual0"], jts["q_actual1"], jts["q_actual2"], jts["q_actual3"], jts["q_actual4"], jts["q_actual5"]]
-
-    
-    def movelrel(self, tpose, acc=0.01, vel=0.01, wait=True):
-        """
-        relative linear move 
-        """
-        return self.movel(tpose, acc, vel, wait, relative=True)
 
     def movel(self, tpose, acc=0.01, vel=0.01, wait=True, relative=False):
         """
@@ -261,17 +257,12 @@ class URRobot(object):
             tpose = [v + l[i] for i, v in enumerate(tpose)]
         tpose = [round(i, 2) for i in tpose]
         prog = "movel(p%s, a=%s, v=%s)" % (tpose, acc, vel)
-        self.sendProgram(prog)
+        self.send_program(prog)
         if not wait:
             return None
         else:
-            time.sleep(0.05)# it is important to sleep since robot may takes a while to get into running state
-            while True:
-                if not self.isRunning():
-                    raise RobotException("Robot stopped")
-                pose = self.getl(wait=True)
-                if self._eqpose(pose, tpose) and not self.secmon.isProgramRunning(): 
-                    return pose
+            self.wait_for_move()
+            return self.getl()
 
     def getl(self, wait=False):
         """
@@ -292,10 +283,10 @@ class URRobot(object):
         raise NotImplementedError
     
     def stopl(self, acc = 0.5):
-        self.sendProgram("stopl(%s)" % acc)
+        self.send_program("stopl(%s)" % acc)
 
     def stopj(self, acc = 1.5):
-        self.sendProgram("stopj(%s)" % acc)
+        self.send_program("stopj(%s)" % acc)
 
     def stop(self):
         self.stopj()
@@ -333,31 +324,26 @@ class URRobot(object):
 
     def set_freedrive(self, val):
         if val:
-            self.sendProgram("set robotmode freedrive")
+            self.send_program("set robotmode freedrive")
         else:
-            self.sendProgram("set robotmode run")
+            self.send_program("set robotmode run")
 
     def set_simulation(self, val):
         if val:
-            self.sendProgram("set sim")
+            self.send_program("set sim")
         else:
-            self.sendProgram("set real")
+            self.send_program("set real")
 
 
 
-class Robot(object):
+class Robot(URRobot):
     """
     Generic Python interface to an industrial robot.
     Compare to the URRobot class, this class adds the possibilty to work directly with matrices
     and includes support for calibrating the robot coordinate system
-    and style portet to PEP 8 
     """
     def __init__(self, host, useRTInterface=False, logLevel = logging.WARN):
-        self.robot = URRobot(host, useRTInterface, logLevel=logLevel)
-        self.logger = logging.getLogger(self.__class__.__name__)
-        if len(logging.root.handlers) == 0: #dirty hack
-            logging.basicConfig()
-        self.logger.setLevel(logLevel)
+        URRobot.__init__(self, host, useRTInterface, logLevel=logLevel)
         self.default_linear_acceleration = 0.01
         self.default_linear_velocity = 0.01
 
@@ -365,10 +351,10 @@ class Robot(object):
         self.inverse = self.calibration.inverse()
         self.tracker = None
 
-    def set_tcp(self, tcp):
-        if type(tcp) == math3d.Transform:
-            tcp = tcp.pose_vector
-        self.robot.setTcp(tcp)
+    def set_tcp(self, x=0, y=0, z=0, a=0, b=0, c=0):
+        if type(x) == math3d.Transform:
+            x = x.pose_vector
+        URRobot.set_tcp(self, x, y, z, a, b, c)
 
     def set_calibration_matrix(self, matrix):
         self.calibration = matrix
@@ -393,16 +379,13 @@ class Robot(object):
         trans = math3d.Transform(self.get_orientation(), math3d.Vector(vect))
         return self.apply_transform(trans, acc, vel, wait)
 
-    def stop(self):
-        self.robot.stop()
-
     def apply_transform(self, trans, acc=None, vel=None, wait=True):
         if not acc: 
             acc = self.default_linear_acceleration
         if not vel: 
             vel = self.default_linear_velocity
         t = self.calibration * trans
-        pose = self.robot.movel(t.pose_vector, acc, vel, wait)
+        pose = URRobot.movel(self, t.pose_vector, acc, vel, wait)
         if pose: #movel does not return anything when wait is False
             return self.inverse * math3d.Transform(pose)
 
@@ -421,7 +404,7 @@ class Robot(object):
         return self.apply_transform(pose * trans, acc, vel, wait)
 
     def get_transform(self, wait=False):
-        pose = self.robot.getl(wait)
+        pose = URRobot.getl(self, wait)
         trans = self.inverse * math3d.Transform(pose) 
         return trans
 
@@ -454,55 +437,16 @@ class Robot(object):
         t = self.get_transform(wait)
         return t.pose_vector
 
-    def is_running(self):
-        return self.robot.isRunning()
-
-    def is_program_running(self):
-        return self.robot.isProgramRunning()
-
-    def set_payload(self, weight):
-        return self.robot.setPayload(weight)
-
     def set_gravity(self, vector):
         if type(vector) == math3d.Vector:
             vector = vector.list
-        return self.robot.setGravity(vector)
-
-    def set_digital_out(self, output, val):
-        return self.robot.setDigitalOut(output, val)
-
-    def get_digital_out(self, nb):
-        self.robot.getDigitalOutput(nb)
-
-    def get_digital_in(self, nb):
-        return self.robot.getDigitalInput(nb)
-
-    def get_analog_in(self, nb):
-        return self.robot.getAnalogInput(nb)
-
-    def set_freedrive(self, val):
-        self.robot.set_freedrive(val)
-
-    def set_simulation(self, val):
-        self.robot.set_simulation(val)
- 
-    def movej(self, joints, acc=0.1, vel=0.05, wait=True, relative=False):
-        """
-        wrapper around the movej command in URRobot
-        """
-        self.robot.movej(joints, acc, vel, wait, relative)
-
-    def getj(self, wait=False):
-        return self.robot.getj(wait)
-
-    def cleanup(self):
-        self.robot.cleanup()
+        return URRobot.set_gravity(self, vector)
 
     def get_tracker(self):
         """
         return an object able to track robot move for logging
         """
-        t = tracker.Tracker(self.robot.host)
+        t = tracker.Tracker(self.host)
         t.set_calibration_matrix(self.calibration)
         return t
 

@@ -297,7 +297,6 @@ class SecondaryMonitor(Thread):
         with self._dictLock:
             return self._dict.copy()
 
-
     def getJointData(self, wait=False):
         if wait:
             self.wait()
