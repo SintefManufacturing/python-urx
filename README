@@ -1,6 +1,56 @@
 urx is a python library to control a robot from 'Universal robot'.
 Internally, to control the robots, urx uses both the 'secondary port' interface and the real-time/matlab interface. 
 urx can optionally use the python-math3d https://launchpad.net/pymath3d library to receive and send transformation matrices to the robot
+Example use:
+
+import urx
+
+rob = urx.robot("192.168.0.100")
+rob.set_tcp((x=01, z=0.232))
+rob.movej((1,2,3,4,5,6), a, v) # move in robot internal coordinate system
+rob.movel((x,y,z,a,b,c), a, v)
+print "Current tool pose is: ",  rob.getl()
+rob.movel((0.1, 0, 0, 0, 0, 0), a, v, relative=true)# move relative to current pose
+rob.translate((0.1, 0, 0), a, v) #move tool and keep orientation
+rob.orient((0.1, 0, 0), a, v) #orient tool and keep tool tip position
+rob.stopj(a)
+
+robot.movel(x,y,z,a,b,c), wait=False)
+while True :
+    sleep(0.1) #sleep first since the information may be outdated
+    if robot.is_program_running():
+        break
+
+robot.movel(x,y,z,a,b,c), wait=False)
+while.robot.getForce() < 50:
+    sleep(0.01)
+robot.stopl()
+
+try:
+    robot.movel((0,0,0.1,0,0,0), relative=True)
+except RobotError, ex:
+    print "Robot could not execute move (emergency stop for example), do something", ex
+
+Using matrices:
+
+robot = Robot("192.168.1.1")
+robot.set_tcp((0,0,0.23,0,0,0)
+calib = mathd3d.Transform() 
+calib.orient.rotate_zb(pi/4) #just an example
+robot.set_calibration_matrix(calib) #set robot corrdinate system
+
+trans = robot.get_transform() # get current transformation matrix (tool to base)
+trans.orient.rotate_yt(pi/2)
+robot.apply_transform(trans)
+trans.pos += math3d.Vector(0,0,0.3)
+robot.apply_transform(trans)
+
+
+#or only work with orientation part
+o = robot.get_orientation()
+o.rotate_yb(pi)
+robot.orient(o)
+
 
 
    This program is free software: you can redistribute it and/or modify

@@ -1,52 +1,5 @@
 """
 Python library to control an UR robot through its TCP/IP interface
-
-import urx
-
-rob = urx.robot(192.168.0.100)
-rob.set_tcp((x=01, z=0.232))
-rob.movej((1,2,3,4,5,6), a, v)
-rob.movel((x,y,z,a,b,c), a, v)
-print "Current tool pose is: ",  rob.getl()
-rob.movelrel((0.1, 0, 0, 0, 0, 0), a, v)
-rob.stopj(a)
-
-robot.movel(x,y,z,a,b,c), wait=False)
-while True :
-    sleep(0.1) #sleep first since the information may be outdated
-    if robot.isProgramRunning():
-        break
-
-robot.movel(x,y,z,a,b,c), wait=False)
-while.robot.getForce() < 50:
-    sleep(0.01)
-robot.stopl()
-
-try:
-    robot.movelrel(0,0,0.1,0,0,0)
-except RobotError, ex:
-    print "Robot could not execute move (emergency stop for example), do somethhing", ex
-
-Using matrices:
-
-robot = Robot("192.168.1.1")
-robot.set_tcp((0,0,0.23,0,0,0)
-calib = mathd3d.Transform() 
-calib.orient.rotate_zb(pi/4) #just an example
-robot.set_calibration_matrix(calib)
-
-trans = robot.get_transform() # get current transformation matrix (tool to base)
-trans.orient.rotate_yt(pi/2)
-robot.apply_transform(trans)
-trans.pos += math3d.Vector(0,0,0.3)
-robot.apply_transform(trans)
-
-
-#or only work with orientation part
-o = robot.get_orientation()
-o.rotate_yb(pi)
-robot.orient(o)
-
 DOC LINK
 http://support.universal-robots.com/URRobot/RemoteAccess
 """
