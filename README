@@ -1,8 +1,6 @@
-High level driver to control a Universal Robot robot from python through its TCP/IP interface
-urx.py is the main file in this repository. It is a python library to control an UR robot from python. Internally it uses URSCript.
+urx is a python library to control a robot from 'Universal robot'.
+Internally, to control the robots, urx uses both the 'secondary port' interface and the real-time/matlab interface. 
 urx can optionally use the python-math3d https://launchpad.net/pymath3d library to receive and send transformation matrices to the robot
-ursecmon.py is a parser for the binary data from the UR
-urrtmon.py is a parser for the "real-time" interface of the robot. It is hardcoded for some controller versions and therefore disabled by default
 
 
    This program is free software: you can redistribute it and/or modify
