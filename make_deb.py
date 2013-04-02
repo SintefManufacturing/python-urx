@@ -8,10 +8,13 @@ from email.utils import formatdate
 
 DEBVERSION = "0.5"
 
-#rev = subprocess.check_output("bzr version-info --check-clean --custom --template='{revno}'", shell=True)
-#bzrstring = "bzr" + str(rev).replace("'","")
-vcsstring = "gitxxx"
+rev = subprocess.check_output("git log -1 --format=\'%ad--%h\' --date=short", shell=True)
+rev = rev.strip()
+rev = str(rev).replace("'","")
+#rev = rev.replace(" ", "T", 1)
+#ev = rev.replace(" ", "Z", 1)
 
+vcsstring = "git" + rev
 
 def get_changelog(progname, version, changelog, date):
     """
