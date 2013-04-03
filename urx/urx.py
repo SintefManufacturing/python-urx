@@ -101,7 +101,7 @@ class URRobot(object):
             force += i**2
         return force**0.5
 
-    def set_tcp(self, x=0, y=0, z=0, a=0, b=0, c=0):
+    def set_tcp(self, x=0, y=0, z=0, rx=0, ry=0, rz=0):
         """
         """
         if type(x) in (list, tuple):
@@ -110,7 +110,7 @@ class URRobot(object):
             else:
                 arg = x
         else:
-            arg = (x, y, z, a, b, c)
+            arg = (x, y, z, rx, ry, rz)
         prog = "set_tcp(p[%s, %s, %s, %s, %s, %s])" % arg
         self.secmon.send_program(prog)
 
@@ -344,10 +344,10 @@ class Robot(URRobot):
         self.inverse = self.calibration.inverse()
         self.tracker = None
 
-    def set_tcp(self, x=0, y=0, z=0, a=0, b=0, c=0):
+    def set_tcp(self, x=0, y=0, z=0, rx=0, ry=0, rz=0):
         if type(x) == math3d.Transform:
             x = x.pose_vector
-        URRobot.set_tcp(self, x, y, z, a, b, c)
+        URRobot.set_tcp(self, x, y, z, rx, ry, rz)
 
     def set_calibration_matrix(self, matrix):
         self.calibration = matrix
