@@ -267,13 +267,50 @@ class URRobot(object):
         self.logger.debug("Current pose from robot: " + str(pose))
         return pose
 
-    def movels(self, joints, acc, vel , radius, wait=True):
+    def movec(self, pose, pose_via, pose_to, acc, vel, wait=True):
         """
-        where joints is a list of list. dvs: several movel commands must be send as one program in order for radius blending to work.
-        This is could easily be implemented in movel by detecting type of the joint variable
+        Move Circular: Move to position (circular in tool-space)
+        see UR documentation
         """
+        pose = [round(i, 2) for i in pose]
+        pose_via = [round(i, 2) for i in pose_via]
+        pose_to = [round(i, 2) for i in pose_to]
+        prog = "movec(p%s, p%s, p%s, a=%s, v=%s)" % (pose, pose_via, pose_to, acc, vel)
+        self.send_program(prog)
+        if not wait:
+            return None
+        else:
+            self.wait_for_move()
+            return self.getl()
+
+
+
+    def movels(self, pose_list, acc, vel , radius, wait=True):
+        """
+        where pose_list is a list of pose. 
+        several movel commands must be send as one program in order for radius blending to work.
+        """
+        #TODO: This is could easily be implemented in movel by detecting type of the joint variable
         # can be implemented by sending a complete urscript program calling several movel in a row with a radius
-        raise NotImplementedError
+        header = "def myProg():\n"
+        end = "end\n"
+        template = "movel(p{}s, a={}, v={}, r={})\n"
+        prog = header
+        for pose in pose_list:
+            pose = [round(i, 2) for i in pose]
+            prog += template.format(pose, acc, vel, radius)
+        prog += end
+        self.send_program(prog)
+        if not wait:
+            return None
+        else:
+            self.wait_for_move()
+            return self.getl()
+
+        
+             
+
+
     
     def stopl(self, acc = 0.5):
         self.send_program("stopl(%s)" % acc)

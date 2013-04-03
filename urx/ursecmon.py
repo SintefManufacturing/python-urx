@@ -214,7 +214,9 @@ class SecondaryMonitor(Thread):
         with self._prog_queue_lock:
             prog.strip()
             self.logger.debug("Sending program: prog")
-            self._prog_queue.append(prog.encode() + b"\n")
+            if type(prog) != bytes:
+                prog = prog.encode()
+            self._prog_queue.append(prog + b"\n")
  
 
     def run(self):
