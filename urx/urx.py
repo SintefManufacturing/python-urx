@@ -51,7 +51,7 @@ class URRobot(object):
         self.host = host
         
         self.logger.info("Opening secondary monitor socket")
-        self.secmon = ursecmon.SecondaryMonitor(self.host, logLevel=logLevel) #data from robot at 10Hz
+        self.secmon = ursecmon.SecondaryMonitor(self.host, logLevel=logLevel, parserLogLevel=logging.WARN) #data from robot at 10Hz
         
         if useRTInterface:
             self.logger.info("Opening real-time monitor socket")
@@ -62,6 +62,8 @@ class URRobot(object):
         self.jointEpsilon = 0.05 # precision of joint movem used to wait for move completion
         self.linearEpsilon = 0.0005 # precision of linear movement, used to wait for move completion
         self.radialEpsilon = 0.05 # precision of radial movement, used to wait for move completion
+        #URScript is  limited in the character length of floats it accepts
+        self.max_float_length = 6 # FIXME: check max length!!!
         if useRTInterface:
             self.rtmon.start()
 
@@ -212,7 +214,11 @@ class URRobot(object):
         if relative:
             l = self.getj()
             joints = [v + l[i] for i, v in enumerate(joints)]
+        joints = [round(j, self.max_float_length) for j in joints] 
         prog = "movej(%s, a=%s, v=%s)" % (list(joints), acc, vel)
+        joints.append(acc)
+        joints.append(vel)
+        prog = "movej([{},{},{},{},{},{}], a={}, v={})".format(*joints)
         self.send_program(prog)
         if not wait:
             return None
@@ -248,8 +254,11 @@ class URRobot(object):
         if relative:
             l = self.getl()
             tpose = [v + l[i] for i, v in enumerate(tpose)]
-        tpose = [round(i, 2) for i in tpose]
-        prog = "movel(p%s, a=%s, v=%s)" % (tpose, acc, vel)
+        tpose = [round(i, self.max_float_length) for i in tpose]
+        #prog = "movel(p%s, a=%s, v=%s)" % (tpose, acc, vel)
+        tpose.append(acc)
+        tpose.append(vel)
+        prog = "movel(p[{},{},{},{},{},{}], a={}, v={})".format(*tpose)
         self.send_program(prog)
         if not wait:
             return None
@@ -272,9 +281,9 @@ class URRobot(object):
         Move Circular: Move to position (circular in tool-space)
         see UR documentation
         """
-        pose = [round(i, 2) for i in pose]
-        pose_via = [round(i, 2) for i in pose_via]
-        pose_to = [round(i, 2) for i in pose_to]
+        pose = [round(i, self.max_float_length) for i in pose]
+        pose_via = [round(i, self.max_float_length) for i in pose_via]
+        pose_to = [round(i, self.max_float_length) for i in pose_to]
         prog = "movec(p%s, p%s, p%s, a=%s, v=%s)" % (pose, pose_via, pose_to, acc, vel)
         self.send_program(prog)
         if not wait:
@@ -283,7 +292,7 @@ class URRobot(object):
             self.wait_for_move()
             return self.getl()
 
-    def movels(self, pose_list, acc, vel , radius, wait=True):
+    def movels(self, pose_list, acc=0.01, vel=0.01 , radius=0.01, wait=True):
         """
         where pose_list is a list of pose. 
         several movel commands must be send as one program in order for radius blending to work.
@@ -292,12 +301,19 @@ class URRobot(object):
         # can be implemented by sending a complete urscript program calling several movel in a row with a radius
         header = "def myProg():\n"
         end = "end\n"
-        template = "movel(p{}s, a={}, v={}, r={})\n"
+        template = "movel(p[{},{},{},{},{},{}], a={}, v={}, r={})\n"
         prog = header
-        for pose in pose_list:
-            pose = [round(i, 2) for i in pose]
-            prog += template.format(pose, acc, vel, radius)
+        for idx, pose in enumerate(pose_list):
+            pose = [round(i, self.max_float_length) for i in pose]
+            pose.append(acc)
+            pose.append(vel)
+            if idx != (len(pose_list) -1 ):
+                pose.append(radius)
+            else:
+                pose.append(0)
+            prog += template.format(*pose)
         prog += end
+        print(prog)
         self.send_program(prog)
         if not wait:
             return None

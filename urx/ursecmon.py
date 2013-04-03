@@ -176,7 +176,7 @@ class ParserUtils(object):
                     self.logger.debug("Packet is not complete, advertised size is {0}, received size is {1}, type is {2}".format(psize, len(data), ptype))
                     return None
             else:
-                self.logger.debug("data smaller than 5 bytes")
+                #self.logger.debug("data smaller than 5 bytes")
                 return None
 
 
@@ -185,11 +185,11 @@ class SecondaryMonitor(Thread):
     """
     Monitor data from secondary port and send programs to robot
     """
-    def __init__(self, host, logLevel=logging.WARN):
+    def __init__(self, host, logLevel=logging.WARN, parserLogLevel=logging.WARN):
         Thread.__init__(self)
         self.logger = logging.getLogger(self.__class__.__name__)
         self.logger.setLevel(logLevel)
-        self._parser = ParserUtils(logLevel)
+        self._parser = ParserUtils(parserLogLevel)
         self._s_secondary = None
         self._dict = {}
         self._dictLock = Lock()
@@ -213,7 +213,7 @@ class SecondaryMonitor(Thread):
         """
         with self._prog_queue_lock:
             prog.strip()
-            self.logger.debug("Sending program: prog")
+            self.logger.debug("Sending program: " + prog)
             if type(prog) != bytes:
                 prog = prog.encode()
             self._prog_queue.append(prog + b"\n")
@@ -270,7 +270,7 @@ class SecondaryMonitor(Thread):
                 self._dataqueue = ans[1]
                 return ans[0]
             else:
-                self.logger.debug("Could not find packet in received data")
+                #self.logger.debug("Could not find packet in received data")
                 tmp = self._s_secondary.recv(1024)
                 self._dataqueue += tmp
 
