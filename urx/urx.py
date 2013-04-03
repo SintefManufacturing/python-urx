@@ -221,18 +221,18 @@ class URRobot(object):
             return self.getj()
 
     def wait_for_move(self):
-        time.sleep(0.05)# it is important to sleep since robot may takes a while to get into running state
+        time.sleep(0.2)# it is important to sleep since robot may takes a while to get into running state
         while True:
             if not self.is_running():
                 raise RobotException("Robot stopped")
             jts = self.secmon.get_joint_data(wait=True)
             finished = True
             for i in range(0, 6):
-                if abs(jts["q_actual%s"%i] - jts["q_targets%s"%i]) > self.radialEpsilon:
+                if abs(jts["q_actual%s"%i] - jts["q_target%s"%i]) > self.radialEpsilon:
                     finished = False
                     break
-                if finished and not self.secmon.is_program_running():
-                    return
+            if finished and not self.secmon.is_program_running():
+                return
  
     def getj(self, wait=False):
         """
@@ -283,8 +283,6 @@ class URRobot(object):
             self.wait_for_move()
             return self.getl()
 
-
-
     def movels(self, pose_list, acc, vel , radius, wait=True):
         """
         where pose_list is a list of pose. 
@@ -307,11 +305,6 @@ class URRobot(object):
             self.wait_for_move()
             return self.getl()
 
-        
-             
-
-
-    
     def stopl(self, acc = 0.5):
         self.send_program("stopl(%s)" % acc)
 
@@ -416,7 +409,7 @@ class Robot(URRobot):
             vel = self.default_linear_velocity
         t = self.calibration * trans
         pose = URRobot.movel(self, t.pose_vector, acc, vel, wait)
-        if pose: #movel does not return anything when wait is False
+        if pose != None : #movel does not return anything when wait is False
             return self.inverse * math3d.Transform(pose)
 
     def add_transform_b(self, trans, acc=None, vel=None, wait=True):
