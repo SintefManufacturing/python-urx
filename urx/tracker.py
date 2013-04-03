@@ -2,8 +2,13 @@ import time
 from multiprocessing import Process, Queue, Event
 
 from urx import urrtmon
-from math3d import Transform
 
+MATH3D = True
+try:
+    import math3d
+except ImportError:
+    MATH3D = False
+    print("pymath3d library could not be found on this computer, disabling use of matrices")
 
 class Tracker(Process):
     def __init__(self, robot_host):
@@ -13,19 +18,22 @@ class Tracker(Process):
         self._stop = Event()
         self._finished = Event()
         self._data = []
-        self.calibration = Transform()
-        self.inverse = self.calibration.inverse()
+	if MATH3D:
+            self.calibration = Transform()
+            self.inverse = self.calibration.inverse()
 
     def _log(self, *args):
         print(self.__class__.__name__, ": ".join([str(i) for i in args]))
 
     def set_calibration_matrix(self, cal):
-        self.calibration = cal
-        self.inverse = self.calibration.inverse()
+	if MATH3D:
+            self.calibration = cal
+            self.inverse = self.calibration.inverse()
 
     def _save_data(self):
-        for data in self._data:
-            data["transform"] = self.inverse * Transform(data["tcp"])
+	if MATH3D:
+            for data in self._data:
+                data["transform"] = self.inverse * Transform(data["tcp"])
         self._queue.put(self._data)
 
 
