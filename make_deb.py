@@ -8,13 +8,18 @@ from email.utils import formatdate
 
 DEBVERSION = "0.5"
 
+branch = subprocess.check_output("git rev-parse --abbrev-ref HEAD", shell=True)
+branch = branch.decode()
+branch = branch.strip()
+branch = str(branch).replace("'","")
 rev = subprocess.check_output("git log -1 --format=\'%ad--%h\' --date=short", shell=True)
+rev = rev.decode()
 rev = rev.strip()
-rev = str(rev).replace("'","")
+rev = rev.replace("'","")
 #rev = rev.replace(" ", "T", 1)
 #ev = rev.replace(" ", "Z", 1)
 
-vcsstring = "git" + rev
+vcsstring = "git-" + branch + "-" + rev
 
 def get_changelog(progname, version, changelog, date):
     """
