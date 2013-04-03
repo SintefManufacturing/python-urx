@@ -65,12 +65,11 @@ class URRobot(object):
         if useRTInterface:
             self.rtmon.start()
 
-        self.start_pose = [1.57, -1.77, 1.57, -1.8, -1.57, -1.57]
         self.secmon.wait() # make sure we get data to not suprise clients
         
 
     def __repr__(self):
-        return "Robot Object (IP=%s, state=%s)" % (self.host, self.secmon.getAllData()["RobotModeData"])
+        return "Robot Object (IP=%s, state=%s)" % (self.host, self.secmon.get_all_data()["RobotModeData"])
 
     def __str__(self):
         return self.__repr__()
@@ -101,12 +100,6 @@ class URRobot(object):
         for i in tcpf:
             force += i**2
         return force**0.5
-
-    def moveToStartPose(self):
-        """
-        move to pos defined in self.start_pose attribute
-        """
-        self.movej(self.start_pose)
 
     def set_tcp(self, x=0, y=0, z=0, a=0, b=0, c=0):
         """
@@ -156,7 +149,7 @@ class URRobot(object):
         """
         get analog input 
         """
-        data = self.secmon.getAllData()
+        data = self.secmon.get_all_data()
         return data["MasterBoardData"]["analogInput0"], data["MasterBoardData"]["analogInput1"]
 
 
@@ -164,21 +157,21 @@ class URRobot(object):
         """
         get analog input 
         """
-        data = self.secmon.getAllData()
+        data = self.secmon.get_all_data()
         return data["MasterBoardData"]["analogInput" + str(nb)]
 
-    def get_digital_inBits(self):
+    def get_digital_in_bits(self):
         """
         get digital output
         """
-        data = self.secmon.getAllData()
+        data = self.secmon.get_all_data()
         return data["MasterBoardData"]["digitalInputBits"]
 
     def get_digital_in(self, nb):
         """
         get digital output
         """
-        data = self.secmon.getAllData()
+        data = self.secmon.get_all_data()
         val = data["MasterBoardData"]["digitalInputBits"]
         mask = 1 << nb
         if  (val & mask):
@@ -186,11 +179,11 @@ class URRobot(object):
         else:
             return 0
 
-    def getDigitalOutput(self, val):
+    def get_digital_out(self, val):
         """
         get digital output
         """
-        data = self.secmon.getAllData()
+        data = self.secmon.get_all_data()
         output = data["MasterBoardData"]["digitalOutputBits"]
         mask = 1 << val
         if  (output & mask):
@@ -198,14 +191,14 @@ class URRobot(object):
         else:
             return 0
 
-    def setAnalogOut(self, output, val):
+    def set_analog_out(self, output, val):
         """
         set analog output, val is a float
         """
         prog = "set_analog_output(%s, %s)" % (output, val) 
         self.secmon.send_program(prog)
 
-    def setToolVoltage(self, val):
+    def set_tool_voltage(self, val):
         """
         set voltage to be delivered to the tool, val is 0, 12 or 24
         """
@@ -232,7 +225,7 @@ class URRobot(object):
         while True:
             if not self.is_running():
                 raise RobotException("Robot stopped")
-            jts = self.secmon.getJointData(wait=True)
+            jts = self.secmon.get_joint_data(wait=True)
             finished = True
             for i in range(0, 6):
                 if abs(jts["q_actual%s"%i] - jts["q_targets%s"%i]) > self.radialEpsilon:
@@ -245,7 +238,7 @@ class URRobot(object):
         """
         get joints position
         """
-        jts = self.secmon.getJointData(wait)
+        jts = self.secmon.get_joint_data(wait)
         return [jts["q_actual0"], jts["q_actual1"], jts["q_actual2"], jts["q_actual3"], jts["q_actual4"], jts["q_actual5"]]
 
     def movel(self, tpose, acc=0.01, vel=0.01, wait=True, relative=False):
@@ -268,7 +261,7 @@ class URRobot(object):
         """
         get TCP position
         """
-        pose = self.secmon.getCartesianInfo(wait)
+        pose = self.secmon.get_cartesian_info(wait)
         if pose:
             pose =  [pose["X"], pose["Y"], pose["Z"], pose["Rx"], pose["Ry"], pose["Rz"]]
         self.logger.debug("Current pose from robot: " + str(pose))

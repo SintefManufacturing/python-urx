@@ -18,22 +18,22 @@ class Tracker(Process):
         self._stop = Event()
         self._finished = Event()
         self._data = []
-	if MATH3D:
-            self.calibration = Transform()
+        if MATH3D:
+            self.calibration = math3d.Transform()
             self.inverse = self.calibration.inverse()
 
     def _log(self, *args):
         print(self.__class__.__name__, ": ".join([str(i) for i in args]))
 
     def set_calibration_matrix(self, cal):
-	if MATH3D:
+        if MATH3D:
             self.calibration = cal
             self.inverse = self.calibration.inverse()
 
     def _save_data(self):
-	if MATH3D:
+        if MATH3D:
             for data in self._data:
-                data["transform"] = self.inverse * Transform(data["tcp"])
+                data["transform"] = self.inverse * math3d.Transform(data["tcp"])
         self._queue.put(self._data)
 
 

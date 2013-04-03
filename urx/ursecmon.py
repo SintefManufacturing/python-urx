@@ -206,7 +206,7 @@ class SecondaryMonitor(Thread):
         self.start()
         self.wait()# make sure we got some data before someone calls us
 
-    def sendProgram(self, prog):
+    def send_program(self, prog):
         """
         send program to robot in URRobot format
         If another program is send while a program is running the first program is aborded. 
@@ -279,7 +279,7 @@ class SecondaryMonitor(Thread):
         with self._dataEvent:
             self._dataEvent.wait()
 
-    def getCartesianInfo(self, wait=False):
+    def get_cartesian_info(self, wait=False):
         if wait:
             self.wait()
         with self._dictLock:
@@ -288,7 +288,7 @@ class SecondaryMonitor(Thread):
             else:
                 return None
 
-    def getAllData(self, wait=False):
+    def get_all_data(self, wait=False):
         """
         return last data obtained from robot in dictionnary format
         """
@@ -297,7 +297,7 @@ class SecondaryMonitor(Thread):
         with self._dictLock:
             return self._dict.copy()
 
-    def getJointData(self, wait=False):
+    def get_joint_data(self, wait=False):
         if wait:
             self.wait()
         with self._dictLock:
@@ -306,7 +306,7 @@ class SecondaryMonitor(Thread):
             else:
                 return None
 
-    def isProgramRunning(self, wait=False):
+    def is_program_running(self, wait=False):
         """
         return True if robot is executing a program
         Rmq: The refresh rate is only 10Hz so the information may be outdated
