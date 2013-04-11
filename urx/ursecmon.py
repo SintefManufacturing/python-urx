@@ -190,7 +190,6 @@ class SecondaryMonitor(Thread):
         self.logger = logging.getLogger(self.__class__.__name__)
         self.logger.setLevel(logLevel)
         self._parser = ParserUtils(parserLogLevel)
-        self._s_secondary = None
         self._dict = {}
         self._dictLock = Lock()
         self.host = host
@@ -211,11 +210,11 @@ class SecondaryMonitor(Thread):
         send program to robot in URRobot format
         If another program is send while a program is running the first program is aborded. 
         """
+        prog.strip()
+        self.logger.debug("Sending program: " + prog)
+        if type(prog) != bytes:
+            prog = prog.encode()
         with self._prog_queue_lock:
-            prog.strip()
-            self.logger.debug("Sending program: " + prog)
-            if type(prog) != bytes:
-                prog = prog.encode()
             self._prog_queue.append(prog + b"\n")
  
 
@@ -236,8 +235,9 @@ class SecondaryMonitor(Thread):
             
             data = self._get_data()
             try:
+                tmpdict = self._parser.parse(data)
                 with self._dictLock:
-                    self._dict = self._parser.parse(data)
+                    self._dict = tmpdict 
             except ParsingException as ex:
                 self.logger.warn("Error parsing one packet from urrobot: " + str(ex) )
                 continue
