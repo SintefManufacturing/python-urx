@@ -15,9 +15,9 @@ rob.translate((0.1, 0, 0), a, v) #move tool and keep orientation
 rob.orient((0.1, 0, 0), a, v) #orient tool and keep tool tip position
 rob.stopj(a)
 
-robot.movel(x,y,z,a,b,c), wait=False)
+robot.movel(x,y,z,rx,ry,rz), wait=False)
+sleep(0.1) #sleep first since the information may be outdated
 while True :
-    sleep(0.1) #sleep first since the information may be outdated
     if robot.is_program_running():
         break
 

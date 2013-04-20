@@ -11,8 +11,6 @@ __author__ = "Olivier Roulet-Dubonnet"
 __copyright__ = "Copyright 2011-2012, Olivier Roulet-Dubonnet"
 __credits__ = ["Olivier Roulet-Dubonnet"]
 __license__ = "GPLv3"
-__version__ = "0.4"
-__status__ = "Development"
 
 from threading import Thread, Condition, Lock
 import logging
@@ -159,12 +157,17 @@ class ParserUtils(object):
         returns None if none found
         """
         counter = 0
+        limit = 10
         while True:
             if len(data) >= 5:
                 psize, ptype = self.get_header(data)
                 if psize < 5 or psize > 2000 or ptype != 16:
                     data = data[1:]
                     counter += 1
+                    if counter > limit:
+                        self.logger.warn("tried {} times to find a packet in data, advertised packet size: {}, type: {}".format(counter, psize, ptype))
+                        self.logger.warn("Data length: {}".format(len(data)))
+                        limit = limit * 10
                 elif len(data) >= psize:
                     self.logger.debug("Got packet with size {0} and type {1}".format(psize, ptype))
                     if counter:
@@ -265,6 +268,7 @@ class SecondaryMonitor(Thread):
         returns something that looks like a packet, nothing is guaranted
         """
         while True:
+            #self.logger.debug("data queue size is: {}".format(len(self._dataqueue)))
             ans = self._parser.find_first_packet(self._dataqueue[:])
             if ans:
                 self._dataqueue = ans[1]

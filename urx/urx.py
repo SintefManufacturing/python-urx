@@ -43,7 +43,7 @@ class URRobot(object):
     The RT interfaces is only used for the get_force related methods
     Rmq: A program sent to the robot i executed immendiatly and any running program is stopped
     """
-    def __init__(self, host, useRTInterface=False, logLevel=logging.WARN):
+    def __init__(self, host, useRTInterface=False, logLevel=logging.WARN, parserLogLevel=logging.WARN):
         self.logger = logging.getLogger(self.__class__.__name__)
         if len(logging.root.handlers) == 0: #dirty hack
             logging.basicConfig()
@@ -51,7 +51,7 @@ class URRobot(object):
         self.host = host
         
         self.logger.info("Opening secondary monitor socket")
-        self.secmon = ursecmon.SecondaryMonitor(self.host, logLevel=logLevel, parserLogLevel=logging.WARN) #data from robot at 10Hz
+        self.secmon = ursecmon.SecondaryMonitor(self.host, logLevel=logLevel, parserLogLevel=parserLogLevel) #data from robot at 10Hz
         
         if useRTInterface:
             self.logger.info("Opening real-time monitor socket")
@@ -381,8 +381,8 @@ class Robot(URRobot):
     Compare to the URRobot class, this class adds the possibilty to work directly with matrices
     and includes support for calibrating the robot coordinate system
     """
-    def __init__(self, host, useRTInterface=False, logLevel = logging.WARN):
-        URRobot.__init__(self, host, useRTInterface, logLevel=logLevel)
+    def __init__(self, host, useRTInterface=False, logLevel = logging.WARN, parserLogLevel=logging.WARN):
+        URRobot.__init__(self, host, useRTInterface, logLevel=logLevel, parserLogLevel=parserLogLevel)
         self.default_linear_acceleration = 0.01
         self.default_linear_velocity = 0.01
 
