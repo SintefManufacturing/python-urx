@@ -385,9 +385,10 @@ class Robot(URRobot):
         URRobot.__init__(self, host, useRTInterface, logLevel=logLevel, parserLogLevel=parserLogLevel)
         self.default_linear_acceleration = 0.01
         self.default_linear_velocity = 0.01
-
-        self.calibration = math3d.Transform() #identity
-        self.inverse = self.calibration.inverse()
+        self.csys_dict = {}
+        self.csys = None
+        self.csys_inv = None
+        self.set_csys("Robot", math3d.Transform()) #identity
         self.tracker = None
 
     def set_tcp(self, x=0, y=0, z=0, rx=0, ry=0, rz=0):
@@ -395,9 +396,21 @@ class Robot(URRobot):
             x = x.pose_vector
         URRobot.set_tcp(self, x, y, z, rx, ry, rz)
 
-    def set_calibration_matrix(self, matrix):
-        self.calibration = matrix
-        self.inverse = self.calibration.inverse()
+    def add_csys(self, name, matrix):
+        self.csys_dict[name] = matrix
+
+    def get_csys_list(self):
+        return self.csys_dict
+
+    def set_csys(self, name, matrix=None):
+        """
+        Set reference corrdinate system to use
+        if matrix != None then a new csys is created
+        """
+        if matrix:
+            self.add_csys(name, matrix)
+        self.csys = self.csys_dict[name]
+        self.csys_inv = self.csys.inverse()
 
     def orient(self, orient, acc=None, vel=None, wait=True):
         if type(orient) != math3d.Orientation:
@@ -423,10 +436,10 @@ class Robot(URRobot):
             acc = self.default_linear_acceleration
         if not vel: 
             vel = self.default_linear_velocity
-        t = self.calibration * trans
+        t = self.csys * trans
         pose = URRobot.movel(self, t.pose_vector, acc, vel, wait)
         if pose != None : #movel does not return anything when wait is False
-            return self.inverse * math3d.Transform(pose)
+            return self.csys_inv * math3d.Transform(pose)
 
     def add_transform_b(self, trans, acc=None, vel=None, wait=True):
         """
@@ -444,7 +457,7 @@ class Robot(URRobot):
 
     def get_transform(self, wait=False):
         pose = URRobot.getl(self, wait)
-        trans = self.inverse * math3d.Transform(pose) 
+        trans = self.csys_inv * math3d.Transform(pose) 
         return trans
 
     def get_orientation(self, wait=False):
@@ -486,7 +499,7 @@ class Robot(URRobot):
         return an object able to track robot move for logging
         """
         t = tracker.Tracker(self.host)
-        t.set_calibration_matrix(self.calibration)
+        t.set_csys(self.csys)
         return t
 
 

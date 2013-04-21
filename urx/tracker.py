@@ -25,7 +25,7 @@ class Tracker(Process):
     def _log(self, *args):
         print(self.__class__.__name__, ": ".join([str(i) for i in args]))
 
-    def set_calibration_matrix(self, cal):
+    def set_csys(self, cal):
         if MATH3D:
             self.calibration = cal
             self.inverse = self.calibration.inverse()
