@@ -10,13 +10,14 @@ class RequestHandler(socketserver.BaseRequestHandler):
         #socketserver.BaseRequestHandler.__init__(self, *args, **kwargs)
 
     def handle(self):
-        try:
+        while True:
             data = str(self.request.recv(1024), 'ascii')
-        except Exception as ex:
-            print("Got exception", ex)
-        else:
             cur_thread = threading.current_thread()
-            print(cur_thread.name, "received: ", data, )
+            print("{} received {} from {}".format(cur_thread.name, data, self.client_address) )
+            if data == "":
+                return
+
+        #when this methods returns, the connection to the client closes
 
     def setup(self):
         print("Got new connection from {}".format( self.client_address) )

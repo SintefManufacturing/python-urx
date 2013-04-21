@@ -17,12 +17,18 @@ import logging
 import struct 
 import socket
 from copy import copy
+import time
 
 
 
 class ParsingException(Exception):
     def __init__(self, *args):
         Exception.__init__(self, *args)
+
+class TimeoutException(Exception):
+    def __init__(self, *args):
+        Exception.__init__(self, *args)
+
 
 
 
@@ -204,6 +210,7 @@ class SecondaryMonitor(Thread):
         self._trystop = False # to stop thread
         self.running = False #True when robot is on and listening
         self._dataEvent = Condition()
+        self.lastpacket_timestamp = 0
 
         self.start()
         self.wait()# make sure we got some data before someone calls us
@@ -249,6 +256,8 @@ class SecondaryMonitor(Thread):
                 self.logger.warn( "Got a packet from robot without RobotModeData, strange ...")
                 continue
 
+            self.lastpacket_timestamp = time.time() 
+
             if self._dict["RobotModeData"]["robotMode"] == 0 \
                             and self._dict["RobotModeData"]["isRealRobotEnabled"] == True \
                             and self._dict["RobotModeData"]["isEmergencyStopped"] == False \
@@ -261,6 +270,7 @@ class SecondaryMonitor(Thread):
                     self.logger.error("Robot not running: " + str( self._dict["RobotModeData"]))
                 self.running = False
             with self._dataEvent:
+                #print("X: new data")
                 self._dataEvent.notifyAll()
 
     def _get_data(self):
@@ -278,12 +288,15 @@ class SecondaryMonitor(Thread):
                 tmp = self._s_secondary.recv(1024)
                 self._dataqueue += tmp
 
-    def wait(self):
+    def wait(self, timeout=0.5):
         """
         wait for next data packet from robot
         """
+        tstamp = self.lastpacket_timestamp
         with self._dataEvent:
-            self._dataEvent.wait()
+            self._dataEvent.wait(timeout)#If we haven't received data after 0.5s there is something very wrong
+            if tstamp == self.lastpacket_timestamp:
+                raise TimeoutException("Did not receive a valid data packet from robot in {}".format(timeout) )
 
     def get_cartesian_info(self, wait=False):
         if wait:
