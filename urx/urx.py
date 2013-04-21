@@ -235,6 +235,7 @@ class URRobot(object):
             finished = True
             for i in range(0, 6):
                 if abs(jts["q_actual%s"%i] - jts["q_target%s"%i]) > self.radialEpsilon:
+                    #self.logger.warn("Waiting for end move, q_actual is {}, q_target is {}, diff is {}, epsilon is {}".format( jts["q_actual%s"%i], jts["q_target%s"%i]  , jts["q_actual%s"%i] - jts["q_target%s"%i], self.radialEpsilon))
                     finished = False
                     break
             if finished and not self.secmon.is_program_running():
@@ -276,6 +277,9 @@ class URRobot(object):
         self.logger.debug("Current pose from robot: " + str(pose))
         return pose
 
+    def get_pose(self, wait=False):
+        return self.getl(wait)
+
     def movec(self, pose, pose_via, pose_to, acc, vel, wait=True):
         """
         Move Circular: Move to position (circular in tool-space)
@@ -298,7 +302,6 @@ class URRobot(object):
         several movel commands must be send as one program in order for radius blending to work.
         """
         #TODO: This is could easily be implemented in movel by detecting type of the joint variable
-        # can be implemented by sending a complete urscript program calling several movel in a row with a radius
         header = "def myProg():\n"
         end = "end\n"
         template = "movel(p[{},{},{},{},{},{}], a={}, v={}, r={})\n"
@@ -313,7 +316,6 @@ class URRobot(object):
                 pose.append(0)
             prog += template.format(*pose)
         prog += end
-        print(prog)
         self.send_program(prog)
         if not wait:
             return None
@@ -448,7 +450,7 @@ class Robot(URRobot):
         pose = self.get_transform()
         return self.apply_transform(trans * pose, acc, vel, wait)
 
-    def add_transform_t(self, trans, acc=None, vel=None, wait=True):
+    def add_transform_tool(self, trans, acc=None, vel=None, wait=True):
         """
         Add transform expressed in tool coordinate
         """
@@ -459,6 +461,9 @@ class Robot(URRobot):
         pose = URRobot.getl(self, wait)
         trans = self.csys_inv * math3d.Transform(pose) 
         return trans
+
+    def get_pose(self, wait=False):
+        return self.get_transform(wait)
 
     def get_orientation(self, wait=False):
         trans  = self.get_transform(wait)
@@ -478,12 +483,12 @@ class Robot(URRobot):
         else:
             self.apply_transform(t, acc, vel, wait)
 
-    def movel_t(self, pose, acc=None, vel=None, wait=True):
+    def movel_tool(self, pose, acc=None, vel=None, wait=True):
         """
         move linear to given pose in tool coordinate
         """
         t = math3d.Transform(pose)
-        self.add_transform_t(t, acc, vel, wait)
+        self.add_transform_tool(t, acc, vel, wait)
 
     def getl(self, wait=False):
         t = self.get_transform(wait)
