@@ -294,7 +294,7 @@ class SecondaryMonitor(Thread):
         """
         tstamp = self.lastpacket_timestamp
         with self._dataEvent:
-            self._dataEvent.wait(timeout)#If we haven't received data after 0.5s there is something very wrong
+            self._dataEvent.wait(timeout)
             if tstamp == self.lastpacket_timestamp:
                 raise TimeoutException("Did not receive a valid data packet from robot in {}".format(timeout) )
 

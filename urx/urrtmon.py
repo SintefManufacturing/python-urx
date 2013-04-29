@@ -34,7 +34,7 @@ class URRTMonitor(threading.Thread):
     def __init__(self, urHost, debug=False):
         threading.Thread.__init__(self)
         self.daemon = True
-        self._stop = True
+        self._stop_event = True
         self._debug = debug
         self._dataEvent = threading.Condition()
         self._dataAccess = threading.Lock()
@@ -53,7 +53,7 @@ class URRTMonitor(threading.Thread):
         the robot connector socket.'''
         ## Record the time of arrival of the first of the stream block
         recvTime = 0
-        pkg = ''
+        pkg = b''
         while len(pkg) < nBytes:
             pkg += self._rtSock.recv(nBytes - len(pkg))
             if recvTime == 0:
@@ -101,8 +101,7 @@ class URRTMonitor(threading.Thread):
     getTCFVec = tcf_vec
     
     def tcf_pose(self, wait=False, timestamp=False):
-        """ Compute the tool pose *Transform* based on the actual joint
-        values."""
+        """ Return the tool pose values."""
         if wait:
             self.wait()
         with self._dataAccess:
@@ -154,9 +153,7 @@ class URRTMonitor(threading.Thread):
 
     def get_all_data(self, wait=True):
         """
-        return all data parsed from robot as dict
-        The content of the dict may vary depending on version of parser and robot controller
-        but their name should stay constant
+        return all data parsed from robot as a dict
         """
         if wait:
             self.wait()
@@ -165,16 +162,16 @@ class URRTMonitor(threading.Thread):
 
     def stop(self):
         #print(self.__class__.__name__+': Stopping')
-        self._stop = True
+        self._stop_event = True
 
     def cleanup(self):
         self.stop()
         self.join()
 
     def run(self):
-        self._stop = False
+        self._stop_event = False
         self._rtSock.connect((self._urHost, 30003))
-        while not self._stop:
+        while not self._stop_event:
             self.__recv_rt_data()
         self._rtSock.close()
 
