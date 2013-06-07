@@ -235,7 +235,7 @@ class URRobot(object):
             finished = True
             for i in range(0, 6):
                 if abs(jts["q_actual%s"%i] - jts["q_target%s"%i]) > self.radialEpsilon:
-                    #self.logger.warn("Waiting for end move, q_actual is {}, q_target is {}, diff is {}, epsilon is {}".format( jts["q_actual%s"%i], jts["q_target%s"%i]  , jts["q_actual%s"%i] - jts["q_target%s"%i], self.radialEpsilon))
+                    #print("Waiting for end move, q_actual is {}, q_target is {}, diff is {}, epsilon is {}".format( jts["q_actual%s"%i], jts["q_target%s"%i]  , jts["q_actual%s"%i] - jts["q_target%s"%i], self.radialEpsilon))
                     finished = False
                     break
             if finished and not self.secmon.is_program_running():
@@ -307,6 +307,8 @@ class URRobot(object):
         template = "movel(p[{},{},{},{},{},{}], a={}, v={}, r={})\n"
         prog = header
         for idx, pose in enumerate(pose_list):
+            t = self.csys * math3d.Transform(pose)
+            pose = t.pose_vector
             pose = [round(i, self.max_float_length) for i in pose]
             pose.append(acc)
             pose.append(vel)
@@ -362,6 +364,7 @@ class URRobot(object):
         self.secmon.cleanup()
         if self.rtmon:
             self.rtmon.stop()
+    shutdown = cleanup #this might be wrong since we could also shutdown the robot from this script
 
     def set_freedrive(self, val):
         if val:
