@@ -18,11 +18,12 @@ import time
 import logging
 
 
-MATH3D = True
+m3d = True
 try:
-    import math3d
+    import math3d as m3d
+    import numpy as np
 except ImportError:
-    MATH3D = False
+    m3d = False
     print("pymath3d library could not be found on this computer, disabling use of matrices")
 
 from urx import urrtmon 
@@ -248,6 +249,13 @@ class URRobot(object):
         jts = self.secmon.get_joint_data(wait)
         return [jts["q_actual0"], jts["q_actual1"], jts["q_actual2"], jts["q_actual3"], jts["q_actual4"], jts["q_actual5"]]
 
+    def speedl(self, velocities, acc, min_time):
+        vels = [round(i, self.max_float_length) for i in velocities]
+        vels.append(acc)
+        vels.append(min_time)
+        prog = "speedl([{},{},{},{},{},{}], a={}, t_min={})".format(*vels)
+        self.send_program(prog)
+
     def movel(self, tpose, acc=0.01, vel=0.01, wait=True, relative=False):
         """
         linear move 
@@ -298,18 +306,14 @@ class URRobot(object):
 
     def movels(self, pose_list, acc=0.01, vel=0.01 , radius=0.01, wait=True):
         """
-        where pose_list is a list of pose. 
-        several movel commands must be send as one program in order for radius blending to work.
+        Concatenate several movel commands and applies a blending radius
+        pose_list is a list of pose. 
         """
-        #TODO: This is could easily be implemented in movel by detecting type of the joint variable
         header = "def myProg():\n"
         end = "end\n"
         template = "movel(p[{},{},{},{},{},{}], a={}, v={}, r={})\n"
         prog = header
         for idx, pose in enumerate(pose_list):
-            t = self.csys * math3d.Transform(pose)
-            pose = t.pose_vector
-            pose = [round(i, self.max_float_length) for i in pose]
             pose.append(acc)
             pose.append(vel)
             if idx != (len(pose_list) -1 ):
@@ -393,11 +397,11 @@ class Robot(URRobot):
         self.csys_dict = {}
         self.csys = None
         self.csys_inv = None
-        self.set_csys("Robot", math3d.Transform()) #identity
+        self.set_csys("Robot", m3d.Transform()) #identity
         self.tracker = None
 
     def set_tcp(self, x=0, y=0, z=0, rx=0, ry=0, rz=0):
-        if type(x) == math3d.Transform:
+        if type(x) == m3d.Transform:
             x = x.pose_vector
         URRobot.set_tcp(self, x, y, z, rx, ry, rz)
 
@@ -418,8 +422,8 @@ class Robot(URRobot):
         self.csys_inv = self.csys.inverse()
 
     def orient(self, orient, acc=None, vel=None, wait=True):
-        if type(orient) != math3d.Orientation:
-            orient = math3d.Orientation(orient)
+        if type(orient) != m3d.Orientation:
+            orient = m3d.Orientation(orient)
         trans = self.get_transform()
         trans.orient = orient
         self.apply_transform(trans, acc, vel, wait)
@@ -429,11 +433,11 @@ class Robot(URRobot):
 
     def translate(self, vect, acc=None, vel=None, wait=True):
         trans = self.get_transform()
-        trans.pos += math3d.Vector(vect)
+        trans.pos += m3d.Vector(vect)
         return self.apply_transform(trans, acc, vel, wait)
 
     def set_pos(self, vect, acc=None, vel=None, wait=True):
-        trans = math3d.Transform(self.get_orientation(), math3d.Vector(vect))
+        trans = m3d.Transform(self.get_orientation(), m3d.Vector(vect))
         return self.apply_transform(trans, acc, vel, wait)
 
     def apply_transform(self, trans, acc=None, vel=None, wait=True):
@@ -444,7 +448,7 @@ class Robot(URRobot):
         t = self.csys * trans
         pose = URRobot.movel(self, t.pose_vector, acc, vel, wait)
         if pose != None : #movel does not return anything when wait is False
-            return self.csys_inv * math3d.Transform(pose)
+            return self.csys_inv * m3d.Transform(pose)
 
     def add_transform_b(self, trans, acc=None, vel=None, wait=True):
         """
@@ -462,7 +466,7 @@ class Robot(URRobot):
 
     def get_transform(self, wait=False):
         pose = URRobot.getl(self, wait)
-        trans = self.csys_inv * math3d.Transform(pose) 
+        trans = self.csys_inv * m3d.Transform(pose) 
         return trans
 
     def get_pose(self, wait=False):
@@ -476,29 +480,66 @@ class Robot(URRobot):
         trans  = self.get_transform(wait)
         return trans.pos
 
-    def movel(self, pose, acc=None, vel=None, wait=True, relative=False):
+    def speedl(self, velocities, acc, min_time):
         """
-        move linear to given pose in base coordinate
+        move at given velocities until minimum min_time seconds
         """
-        t = math3d.Transform(pose)
+        v = self.csys.orient * m3d.Vector(velocities[:3])
+        w = self.csys.orient * m3d.Vector(velocities[3:])
+        URRobot.speedl(self, np.concatenate((v.data, w.data)), acc, min_time)
+
+    def speedl_tool(self, velocities, acc, min_time):
+        """
+        move in tool coordinate at given velocities until minimum min_time seconds
+        """
+        pose = self.get_transform()
+        v = self.csys.orient * pose.orient * m3d.Vector(velocities[:3])
+        w = self.csys.orient * pose.orient * m3d.Vector(velocities[3:])
+        print(pose, v, w)
+        URRobot.speedl(self, np.concatenate((v.data, w.data)), acc, min_time)
+
+    def movel(self, pose, acc=None, vel=None, wait=True, relative=False, radius=0.01):
+        """
+        move linear to given pose in current csys
+        if pose is a list of poses then movels is called
+        """
+        if type(pose[0]) == list:
+            return self.movels(pose, acc, vel, radius, wait)
+        t = m3d.Transform(pose)
         if relative:
-            self.add_transform_b(t, acc, vel, wait)
+            return self.add_transform_b(t, acc, vel, wait)
         else:
-            self.apply_transform(t, acc, vel, wait)
+            return self.apply_transform(t, acc, vel, wait)
 
     def movel_tool(self, pose, acc=None, vel=None, wait=True):
         """
         move linear to given pose in tool coordinate
         """
-        t = math3d.Transform(pose)
+        t = m3d.Transform(pose)
         self.add_transform_tool(t, acc, vel, wait)
 
     def getl(self, wait=False):
+        """
+        return current transformation from tcp to current csys
+        """
         t = self.get_transform(wait)
         return t.pose_vector
 
+    def movels(self, pose_list, acc=0.01, vel=0.01 , radius=0.01, wait=True):
+        """
+        Concatenate several movel commands and applies a blending radius
+        pose_list is a list of pose. 
+        """
+        new_poses = []
+        for idx, pose in enumerate(pose_list):
+            t = self.csys * m3d.Transform(pose)
+            pose = t.pose_vector
+            pose = [round(i, self.max_float_length) for i in pose]
+            new_poses.append(pose)
+        return URRobot(new_poses, acc, vel, radius, wait)
+
     def set_gravity(self, vector):
-        if type(vector) == math3d.Vector:
+        if type(vector) == m3d.Vector:
             vector = vector.list
         return URRobot.set_gravity(self, vector)
 
@@ -511,7 +552,7 @@ class Robot(URRobot):
         return t
 
 
-if not MATH3D:
+if not m3d:
     Robot = URRobot
 
 if __name__ == "__main__":
