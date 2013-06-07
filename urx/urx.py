@@ -432,15 +432,32 @@ class Robot(URRobot):
         self.orient(orient, acc, vel, wait)
 
     def translate(self, vect, acc=None, vel=None, wait=True):
-        trans = self.get_transform()
-        trans.pos += m3d.Vector(vect)
-        return self.apply_transform(trans, acc, vel, wait)
+        """
+        move tool in base coordinate, keeping orientation
+        """
+        t = m3d.Transform()
+        t.pos += vect
+        return self.add_transform_base(t, acc, vel, wait)
+
+    def translate_tool(self, vect, acc=None, vel=None, wait=True):
+        """
+        move tool in tool coordinate, keeping orientation
+        """
+        t = m3d.Transform()
+        t.pos += vect
+        return self.add_transform_tool(t, acc, vel, wait)
 
     def set_pos(self, vect, acc=None, vel=None, wait=True):
+        """
+        set tool to given pos, keeping constant orientation
+        """
         trans = m3d.Transform(self.get_orientation(), m3d.Vector(vect))
         return self.apply_transform(trans, acc, vel, wait)
 
     def apply_transform(self, trans, acc=None, vel=None, wait=True):
+        """
+        move tcp to point and orientation defined by a transformation
+        """
         if not acc: 
             acc = self.default_linear_acceleration
         if not vel: 
@@ -450,7 +467,7 @@ class Robot(URRobot):
         if pose != None : #movel does not return anything when wait is False
             return self.csys_inv * m3d.Transform(pose)
 
-    def add_transform_b(self, trans, acc=None, vel=None, wait=True):
+    def add_transform_base(self, trans, acc=None, vel=None, wait=True):
         """
         Add transform expressed in base coordinate
         """
@@ -465,11 +482,17 @@ class Robot(URRobot):
         return self.apply_transform(pose * trans, acc, vel, wait)
 
     def get_transform(self, wait=False):
+        """
+        get current transform from base to to tcp
+        """
         pose = URRobot.getl(self, wait)
         trans = self.csys_inv * m3d.Transform(pose) 
         return trans
 
     def get_pose(self, wait=False):
+        """
+        get current transform from base to to tcp
+        """
         return self.get_transform(wait)
 
     def get_orientation(self, wait=False):
@@ -507,7 +530,7 @@ class Robot(URRobot):
             return self.movels(pose, acc, vel, radius, wait)
         t = m3d.Transform(pose)
         if relative:
-            return self.add_transform_b(t, acc, vel, wait)
+            return self.add_transform_base(t, acc, vel, wait)
         else:
             return self.apply_transform(t, acc, vel, wait)
 
