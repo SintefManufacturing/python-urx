@@ -8,7 +8,7 @@ http://support.universal-robots.com/Technical/PrimaryAndSecondaryClientInterface
 """
 
 __author__ = "Olivier Roulet-Dubonnet"
-__copyright__ = "Copyright 2011-2012, Olivier Roulet-Dubonnet"
+__copyright__ = "Copyright 2011-2013, Sintef Raufoss Manufacturing"
 __credits__ = ["Olivier Roulet-Dubonnet"]
 __license__ = "GPLv3"
 

@@ -9,8 +9,6 @@ __author__ = "Morten Lind, Olivier Roulet-Dubonnet"
 __copyright__ = "Copyright 2011, NTNU/SINTEF Raufoss Manufacturing AS"
 __credits__ = ["Morten Lind, Olivier Roulet-Dubonnet"]
 __license__ = "GPLv3"
-__version__ = "0.1"
-__status__ = "Development"
 
 
 

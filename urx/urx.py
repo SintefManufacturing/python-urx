@@ -6,11 +6,9 @@ http://support.universal-robots.com/URRobot/RemoteAccess
 from __future__ import absolute_import # necessary for import tricks to work with python2
 
 __author__ = "Olivier Roulet-Dubonnet"
-__copyright__ = "Copyright 2011-2012, Olivier Roulet-Dubonnet"
+__copyright__ = "Copyright 2011-2012, Sintef Raufoss Manufacturing Roulet-Dubonnet"
 __credits__ = ["Olivier Roulet-Dubonnet"]
 __license__ = "GPLv3"
-__version__ = "0.3"
-__status__ = "Development"
 
 
 
