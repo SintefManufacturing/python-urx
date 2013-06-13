@@ -82,6 +82,7 @@ class URRobot(object):
         return self.secmon.is_program_running()
 
     def send_program(self, prog):
+        self.logger.info("Sending program: " + prog)
         self.secmon.send_program(prog)
 
     def get_tcp_force(self, wait=True):
@@ -442,7 +443,7 @@ class Robot(URRobot):
         move tool in tool coordinate, keeping orientation
         """
         t = m3d.Transform()
-        t.pos += vect
+        t.pos += m3d.Vector(vect)
         return self.add_transform_tool(t, acc, vel, wait)
 
     def set_pos(self, vect, acc=None, vel=None, wait=True):
