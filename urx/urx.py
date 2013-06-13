@@ -103,24 +103,25 @@ class URRobot(object):
             force += i**2
         return force**0.5
 
-    def set_tcp(self, x=0, y=0, z=0, rx=0, ry=0, rz=0):
+    def set_tcp(self, tcp):
         """
+        set robot flange to tool tip transformation
         """
-        if type(x) in (list, tuple):
-            if len(x) != 6:
-                raise Exception("Tcp is a 6 values list")
-            else:
-                arg = x
-        else:
-            arg = (x, y, z, rx, ry, rz)
-        prog = "set_tcp(p[%s, %s, %s, %s, %s, %s])" % arg
+        prog = "set_tcp(p[{}, {}, {}, {}, {}, {}])".format(*tcp)
         self.secmon.send_program(prog)
 
-    def set_payload(self, weight):
+    def set_payload(self, weight, cog=None):
         """
         set payload in Kg
+        cog is a vector x,y,z
+        if cog is not specified, then tool center point is used
         """
-        prog = "set_payload(%s)" % weight 
+        if cog:
+            cog = list(cog)
+            cog.insert(0, weight)
+            prog = "set_payload({}, ({},{},{}))".format(*cog)
+        else:
+            prog = "set_payload(%s)" % weight 
         self.secmon.send_program(prog)
 
     def set_gravity(self, vector):
@@ -249,11 +250,25 @@ class URRobot(object):
         return [jts["q_actual0"], jts["q_actual1"], jts["q_actual2"], jts["q_actual3"], jts["q_actual4"], jts["q_actual5"]]
 
     def speedl(self, velocities, acc, min_time):
+        """
+        move at given velocities until minimum min_time seconds
+        """
         vels = [round(i, self.max_float_length) for i in velocities]
         vels.append(acc)
         vels.append(min_time)
         prog = "speedl([{},{},{},{},{},{}], a={}, t_min={})".format(*vels)
         self.send_program(prog)
+
+    def speedj(self, velocities, acc, min_time):
+        """
+        move at given joint velocities until minimum min_time seconds
+        """
+        vels = [round(i, self.max_float_length) for i in velocities]
+        vels.append(acc)
+        vels.append(min_time)
+        prog = "speedj([{},{},{},{},{},{}], a={}, t_min={})".format(*vels)
+        self.send_program(prog)
+
 
     def movel(self, tpose, acc=0.01, vel=0.01, wait=True, relative=False):
         """
@@ -267,6 +282,26 @@ class URRobot(object):
         tpose.append(acc)
         tpose.append(vel)
         prog = "movel(p[{},{},{},{},{},{}], a={}, v={})".format(*tpose)
+        self.send_program(prog)
+        if not wait:
+            return None
+        else:
+            self.wait_for_move()
+            return self.getl()
+
+    def movep(self, tpose, acc=0.01, vel=0.01, radius=0, wait=True, relative=False):
+        """
+        ???? 
+        """
+        if relative:
+            l = self.getl()
+            tpose = [v + l[i] for i, v in enumerate(tpose)]
+        tpose = [round(i, self.max_float_length) for i in tpose]
+        #prog = "movel(p%s, a=%s, v=%s)" % (tpose, acc, vel)
+        tpose.append(acc)
+        tpose.append(vel)
+        tpose.append(radius)
+        prog = "movep(p[{},{},{},{},{},{}], a={}, v={}, r={})".format(*tpose)
         self.send_program(prog)
         if not wait:
             return None
@@ -399,10 +434,10 @@ class Robot(URRobot):
         self.set_csys("Robot", m3d.Transform()) #identity
         self.tracker = None
 
-    def set_tcp(self, x=0, y=0, z=0, rx=0, ry=0, rz=0):
-        if type(x) == m3d.Transform:
-            x = x.pose_vector
-        URRobot.set_tcp(self, x, y, z, rx, ry, rz)
+    def set_tcp(self, tcp):
+        if type(tcp) == m3d.Transform:
+            tcp = tcp.pose_vector
+        URRobot.set_tcp(self, tcp)
 
     def add_csys(self, name, matrix):
         self.csys_dict[name] = matrix
