@@ -6,7 +6,7 @@ http://support.universal-robots.com/URRobot/RemoteAccess
 from __future__ import absolute_import # necessary for import tricks to work with python2
 
 __author__ = "Olivier Roulet-Dubonnet"
-__copyright__ = "Copyright 2011-2012, Sintef Raufoss Manufacturing Roulet-Dubonnet"
+__copyright__ = "Copyright 2011-2013, Sintef Raufoss Manufacturing Roulet-Dubonnet"
 __credits__ = ["Olivier Roulet-Dubonnet"]
 __license__ = "GPLv3"
 
@@ -228,7 +228,7 @@ class URRobot(object):
             return self.getj()
 
     def wait_for_move(self):
-        time.sleep(0.2)# it is important to sleep since robot may takes a while to get into running state
+        time.sleep(0.5)# it is important to sleep since robot may takes a while to get into running state, for a physical move 0.5s is very low
         while True:
             if not self.is_running():
                 raise RobotException("Robot stopped")
