@@ -6,7 +6,9 @@ hackish file to crreate deb from setup.py
 import subprocess
 from email.utils import formatdate
 
-DEBVERSION = "0.6"
+import urx
+
+DEBVERSION = urx.__version__
 
 branch = subprocess.check_output("git rev-parse --abbrev-ref HEAD", shell=True)
 branch = branch.decode()
