@@ -1,3 +1,10 @@
+"""
+tracks moves a UR robot over the UR real-time port
+"""
+__author__ = "Olivier Roulet-Dubonnet"
+__copyright__ = "Copyright 2011-2013, Sintef Raufoss Manufacturing"
+__credits__ = ["Olivier Roulet-Dubonnet"]
+__license__ = "GPLv3"
 import time
 from multiprocessing import Process, Queue, Event
 

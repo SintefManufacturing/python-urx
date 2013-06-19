@@ -233,8 +233,7 @@ class SecondaryMonitor(Thread):
         check program execution status in the secondary client data packet we get from the robot 
         This interface uses only data from the secondary client interface (see UR doc)
         Only the last connected client is the primary client, 
-        so this is not guaranted and we cannot rely on information only 
-        send to the primary client(like program execution start ?!?!?)
+        so this is not guaranted and we cannot rely on information to the primary client.
         """
 
         while not self._trystop:
@@ -278,13 +277,13 @@ class SecondaryMonitor(Thread):
         returns something that looks like a packet, nothing is guaranted
         """
         while True:
-            #self.logger.debug("data queue size is: {}".format(len(self._dataqueue)))
+            self.logger.debug("data queue size is: {}".format(len(self._dataqueue)))
             ans = self._parser.find_first_packet(self._dataqueue[:])
             if ans:
                 self._dataqueue = ans[1]
                 return ans[0]
             else:
-                #self.logger.debug("Could not find packet in received data")
+                self.logger.debug("Could not find packet in received data")
                 tmp = self._s_secondary.recv(1024)
                 self._dataqueue += tmp
 
@@ -339,6 +338,8 @@ class SecondaryMonitor(Thread):
     def cleanup(self):
         self._trystop = True
         self.join()
+        #with self._dataEvent: #wake up any thread that may be waiting for data before we close. Should we do that?
+            #self._dataEvent.notifyAll()
         if self._s_secondary:
             with self._prog_queue_lock:
                 self._s_secondary.close()
