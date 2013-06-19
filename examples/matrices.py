@@ -11,15 +11,23 @@ if __name__ == "__main__":
         l = 0.05
         v = 0.05
         a = 0.3
+        rob.translate((l, 0, 0))
         pose = rob.getl()
         print("robot tcp is at: ", pose)
         pose[2] += l
         rob.movel(pose, acc=a, vel=v)
-        print("relative move in base coordinate ")
-        rob.translate((0, 0, -z), acc=a, vel=v)
-        print("relative move in tool coordinate")
-        rob.translate_tool((0, 0, -z), acc=a, vel=v)
-        rob.translate_tool((0, 0, z), acc=a, vel=v)
+
+
+        t = rob.get_transform()
+        print("Transformation from base to tcp is: ", t)
+        t.orient.rotate_zb(pi/4)
+        t.pos[0] -= l
+        rob.apply_transform(t, vel=v, acc=a)
+        t.pos[2] -= l
+        new_t = rob.apply_transform(t, vel=v, acc=a)
+        print("Transformation from base to tcp is: ", new_t)
+
+
     finally:
         rob.cleanup()
 
