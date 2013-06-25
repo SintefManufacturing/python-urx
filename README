@@ -1,14 +1,30 @@
+   This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+
 urx is a python library to control a robot from 'Universal robot'.
-Internally, to control the robots, urx uses both the 'secondary port' interface and the real-time/matlab interface. 
+Both the 'secondary port' interface and the real-time/matlab interface of the UR controller are used. 
 urx can optionally use the python-math3d https://launchpad.net/pymath3d library to receive and send transformation matrices to the robot
+
 Example use:
 
 import urx
 
 rob = urx.robot("192.168.0.100")
-rob.set_tcp((x=01, z=0.232))
-rob.movej((1,2,3,4,5,6), a, v) # move in robot internal coordinate system
-rob.movel((x,y,z,rx,ry,rz), a, v)
+rob.set_tcp((0, 0, 0.1, 0, 0, 0))
+rob.set_payload(2, (0, 0, 0.1))
+rob.movej((1, 2, 3, 4, 5, 6), a, v) 
+rob.movel((x, y, z, rx, ry, rz), a, v)
 print "Current tool pose is: ",  rob.getl()
 rob.movel((0.1, 0, 0, 0, 0, 0), a, v, relative=true)# move relative to current pose
 rob.translate((0.1, 0, 0), a, v) #move tool and keep orientation
@@ -31,10 +47,9 @@ except RobotError, ex:
 Using matrices:
 
 robot = Robot("192.168.1.1")
-robot.set_tcp((0,0,0.23,0,0,0)
-calib = mathd3d.Transform() 
-calib.orient.rotate_zb(pi/4) #just an example
-robot.set_csys("mycalib", calib) #add new corrdinate system and set it as default
+mycsys = mathd3d.Transform() 
+mycsys.orient.rotate_zb(pi/4) #just an example
+robot.set_csys("default", mycsys) #add new corrdinate system and set it as default
 
 trans = robot.get_transform() # get current transformation matrix (tool to base)
 trans.orient.rotate_yt(pi/2)
@@ -49,16 +64,3 @@ o.rotate_yb(pi)
 robot.orient(o)
 
 
-
-   This program is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
-
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with this program.  If not, see <http://www.gnu.org/licenses/>.
