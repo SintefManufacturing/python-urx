@@ -103,7 +103,7 @@ class URRobot(object):
         set robot flange to tool tip transformation
         """
         prog = "set_tcp(p[{}, {}, {}, {}, {}, {}])".format(*tcp)
-        self.secmon.send_program(prog)
+        self.send_program(prog)
 
     def set_payload(self, weight, cog=None):
         """
@@ -117,21 +117,21 @@ class URRobot(object):
             prog = "set_payload({}, ({},{},{}))".format(*cog)
         else:
             prog = "set_payload(%s)" % weight 
-        self.secmon.send_program(prog)
+        self.send_program(prog)
 
     def set_gravity(self, vector):
         """
         set direction of gravity
         """
         prog = "set_gravity(%s)" % list(vector) 
-        self.secmon.send_program(prog)
+        self.send_program(prog)
 
     def send_message(self, msg):
         """
         send message to the GUI log tab on the robot controller
         """
         prog = "textmsg(%s)" % msg 
-        self.secmon.send_program(prog)
+        self.send_program(prog)
 
     def set_digital_out(self, output, val):
         """
@@ -141,7 +141,7 @@ class URRobot(object):
             val = "True"
         else:
             val = "False"
-        self.secmon.send_program('digital_out[%s]=%s' % (output, val))
+        self.send_program('digital_out[%s]=%s' % (output, val))
 
     def get_analog_inputs(self):
         """
@@ -194,14 +194,14 @@ class URRobot(object):
         set analog output, val is a float
         """
         prog = "set_analog_output(%s, %s)" % (output, val) 
-        self.secmon.send_program(prog)
+        self.send_program(prog)
 
     def set_tool_voltage(self, val):
         """
         set voltage to be delivered to the tool, val is 0, 12 or 24
         """
         prog = "set_tool_voltage(%s)" % (val) 
-        self.secmon.send_program(prog)
+        self.send_program(prog)
 
     def movej(self, joints, acc=0.1, vel=0.05, wait=True, relative=False):
         """
