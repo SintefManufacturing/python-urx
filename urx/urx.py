@@ -434,7 +434,7 @@ class Robot(URRobot):
         self.csys_inv = self.csys.inverse()
 
     def orient(self, orient, acc=None, vel=None, wait=True):
-        if type(orient) != m3d.Orientation:
+        if type(orient) is not m3d.Orientation:
             orient = m3d.Orientation(orient)
         trans = self.get_transform()
         trans.orient = orient
@@ -448,7 +448,9 @@ class Robot(URRobot):
         move tool in base coordinate, keeping orientation
         """
         t = m3d.Transform()
-        t.pos += vect
+        if not type(vect) is m3d.Vector:
+            vect = m3d.Vector(vect)
+        t.pos += m3d.Vector(vect)
         return self.add_transform_base(t, acc, vel, wait)
 
     def translate_tool(self, vect, acc=None, vel=None, wait=True):
@@ -456,13 +458,17 @@ class Robot(URRobot):
         move tool in tool coordinate, keeping orientation
         """
         t = m3d.Transform()
-        t.pos += m3d.Vector(vect)
+        if not type(vect) is m3d.Vector:
+            vect = m3d.Vector(vect)
+        t.pos += vect
         return self.add_transform_tool(t, acc, vel, wait)
 
     def set_pos(self, vect, acc=None, vel=None, wait=True):
         """
         set tool to given pos, keeping constant orientation
         """
+        if not type(vect) is m3d.Vector:
+            vect = m3d.Vector(vect)
         trans = m3d.Transform(self.get_orientation(), m3d.Vector(vect))
         return self.apply_transform(trans, acc, vel, wait)
 
