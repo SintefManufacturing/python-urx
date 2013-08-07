@@ -31,8 +31,14 @@ rob.translate((0.1, 0, 0), a, v) #move tool and keep orientation
 rob.orient((0.1, 0, 0), a, v) #orient tool and keep tool tip position
 rob.stopj(a)
 
-robot.movel(x,y,z,rx,ry,rz), wait=False)
-sleep(0.1) #sleep first since the information may be outdated
+robot.movel(x, y, z, rx, ry, rz), wait=False)
+while True :
+    sleep(0.1) #sleep first since the information may be outdated
+    if robot.is_program_running():
+        break
+
+robot.movel(x, y, z, rx, ry, rz), wait=False)
+>>>>>>> 43397b6cea74844db7a98bc58649fda3fce86cba
 while.robot.getForce() < 50:
     sleep(0.01)
     if not robot.is_program_running():
@@ -47,10 +53,11 @@ except RobotError, ex:
 Using matrices:
 
 robot = Robot("192.168.1.1")
-mycsys = mathd3d.Transform() 
-mycsys.orient.rotate_zb(pi/4) #just an example
-robot.set_csys("default", mycsys) #add new corrdinate system and set it as default
-
+robot.set_tcp((0,0,0.23,0,0,0)
+calib = mathd3d.Transform() 
+calib.orient.rotate_zb(pi/4) #just an example
+robot.add_csys("mycsys", calib) #set robot corrdinate system
+robot.set_default_csys("mycsys")
 trans = robot.get_transform() # get current transformation matrix (tool to base)
 trans.orient.rotate_yt(pi/2)
 robot.apply_transform(trans)
