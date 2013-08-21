@@ -277,13 +277,14 @@ class SecondaryMonitor(Thread):
         returns something that looks like a packet, nothing is guaranted
         """
         while True:
-            self.logger.debug("data queue size is: {}".format(len(self._dataqueue)))
+            #self.logger.debug("data queue size is: {}".format(len(self._dataqueue)))
             ans = self._parser.find_first_packet(self._dataqueue[:])
             if ans:
                 self._dataqueue = ans[1]
+                #self.logger.debug("found packet of size {}".format(len(ans[0])))
                 return ans[0]
             else:
-                self.logger.debug("Could not find packet in received data")
+                #self.logger.debug("Could not find packet in received data")
                 tmp = self._s_secondary.recv(1024)
                 self._dataqueue += tmp
 

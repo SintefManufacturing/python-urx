@@ -229,6 +229,7 @@ class URRobot(object):
         """
         # it is important to sleep since robot may takes a while to get into running state, 
         # for a physical move 0.5s is very short
+        self.logger.debug("Waiting for move completion")
         for i in range(3):
             self.secmon.wait()
         while True:
@@ -239,10 +240,11 @@ class URRobot(object):
             for i in range(0, 6):
                 #Rmq: q_target is an interpolated target we have no control over
                 if abs(jts["q_actual%s"%i] - jts["q_target%s"%i]) > self.joinEpsilon:
-                    #print("Waiting for end move, q_actual is {}, q_target is {}, diff is {}, epsilon is {}".format( jts["q_actual%s"%i], jts["q_target%s"%i]  , jts["q_actual%s"%i] - jts["q_target%s"%i], self.radialEpsilon))
+                    print("Waiting for end move, q_actual is {}, q_target is {}, diff is {}, epsilon is {}".format( jts["q_actual%s"%i], jts["q_target%s"%i]  , jts["q_actual%s"%i] - jts["q_target%s"%i], self.radialEpsilon))
                     finished = False
                     break
             if finished and not self.secmon.is_program_running():
+                self.logger.debug("move has ended")
                 return
 
     def getj(self, wait=False):
