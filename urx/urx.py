@@ -474,7 +474,7 @@ class Robot(URRobot):
         trans = m3d.Transform(self.get_orientation(), m3d.Vector(vect))
         return self.apply_transform(trans, acc, vel, wait)
 
-    def apply_transform(self, trans, acc=None, vel=None, wait=True, process=True):
+    def apply_transform(self, trans, acc=None, vel=None, wait=True, process=False):
         """
         move tcp to point and orientation defined by a transformation
         if process is True, movep is used instead of movel
@@ -491,14 +491,14 @@ class Robot(URRobot):
         if pose != None : #movel does not return anything when wait is False
             return self.csys_inv * m3d.Transform(pose)
 
-    def add_transform_base(self, trans, acc=None, vel=None, wait=True, process=True):
+    def add_transform_base(self, trans, acc=None, vel=None, wait=True, process=False):
         """
         Add transform expressed in base coordinate
         """
         pose = self.get_transform()
         return self.apply_transform(trans * pose, acc, vel, wait, process)
 
-    def add_transform_tool(self, trans, acc=None, vel=None, wait=True, process=True):
+    def add_transform_tool(self, trans, acc=None, vel=None, wait=True, process=False):
         """
         Add transform expressed in tool coordinate
         """
