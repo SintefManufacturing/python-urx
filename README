@@ -12,7 +12,7 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-urx is a python library to control a robot from 'Universal robot'.
+urx is a python library to control a robot from 'Universal robot'. It has currently been used with several versions of UR5.
 Both the 'secondary port' interface and the real-time/matlab interface of the UR controller are used. 
 urx can optionally use the python-math3d https://launchpad.net/pymath3d library to receive and send transformation matrices to the robot
 
