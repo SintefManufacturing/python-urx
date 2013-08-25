@@ -17,6 +17,7 @@ import socket
 import struct 
 import time
 import threading
+from copy import deepcopy
 
 import numpy as np
 
@@ -56,11 +57,12 @@ class URRTMonitor(threading.Thread):
         self._buffering = False
         self._buffer_lock = threading.Lock()
         self._buffer = []
-        self._buffer_size_max = 100
-        self._current_csys = None
+        self._csys = None
+        self._csys_lock = threading.Lock()
 
-    def set_current_csys(self, csys):
-        self._current_csys = csys
+    def set_csys(self, csys):
+        with self._csys_lock:
+            self._csys = csys
 
     def __recv_bytes(self, nBytes):
         ''' Facility method for receiving exactly "nBytes" bytes from
@@ -158,33 +160,43 @@ class URRTMonitor(threading.Thread):
             self._tcp_force = np.array(unp[67:73])
             self._tcp = np.array(unp[73:79])
 
-            if self._current_csys:
-                tcp = self._current_csys * m3d.Transform(self._tcp)#might be a godd idea to remove dependancy on m3d
+            if self._csys:
+                with self._csys_lock:
+                    tcp = self._csys * m3d.Transform(self._tcp)#might be a godd idea to remove dependancy on m3d
                 self._tcp = tcp.pose_vector
         if self._buffering:
             with self._buffer_lock:
                 self._buffer.append((self._timestamp, self._ctrlTimestamp, self._tcp, self._qActual))#FIXME use named arrays of allow to configure what data to buffer
-                if len(self._buffer) > self._buffer_size_max:
-                    self.logger.warning("Warning: buffer full")
-                    self._buffer.pop()
 
         with self._dataEvent:
             self._dataEvent.notifyAll()
 
-    def start_buffering(self, maxsize=100):
+    def start_buffering(self):
+        """
+        start buffering all data from controller
+        """
         self._buffer = []
         self._buffering = True
-        self._buffer_size_max = maxsize
 
     def stop_buffering(self):
         self._buffering = False
 
     def pop_buffer(self):
+        """
+        return oldest value in buffer
+        """
         with self._buffer_lock:
             if len(self._buffer) > 0:
                 return self._buffer.pop(0)
             else:
                 return None
+
+    def get_buffer(self):
+        """
+        return a copy of the entire buffer
+        """
+        with self._buffer_lock:
+            return deepcopy(self._buffer)
 
     def get_all_data(self, wait=True):
         """

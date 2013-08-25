@@ -23,7 +23,6 @@ except ImportError:
 
 from urx import urrtmon 
 from urx import ursecmon
-from urx import tracker
 
 
 class RobotException(Exception):
@@ -45,21 +44,18 @@ class URRobot(object):
             logging.basicConfig()
         self.logger.setLevel(logLevel)
         self.host = host
+        self.csys = None 
         
         self.logger.info("Opening secondary monitor socket")
         self.secmon = ursecmon.SecondaryMonitor(self.host, logLevel=logLevel, parserLogLevel=parserLogLevel) #data from robot at 10Hz
-        
+       
+        self.rtmon = None
         if useRTInterface:
-            self.logger.info("Opening real-time monitor socket")
-            self.rtmon = urrtmon.URRTMonitor(self.host)# som information is only available on rt interface
-        else:
-            self.rtmon = None
+            self.rtmon = self.get_realtime_monitor()
         #the next 3 values must be conservative! otherwise we may wait forever
         self.joinEpsilon = 0.01 # precision of joint movem used to wait for move completion
         #URScript is  limited in the character length of floats it accepts
         self.max_float_length = 6 # FIXME: check max length!!!
-        if useRTInterface:
-            self.rtmon.start()
 
         self.secmon.wait() # make sure we get data to not suprise clients
         
@@ -240,7 +236,7 @@ class URRobot(object):
             for i in range(0, 6):
                 #Rmq: q_target is an interpolated target we have no control over
                 if abs(jts["q_actual%s"%i] - jts["q_target%s"%i]) > self.joinEpsilon:
-                    print("Waiting for end move, q_actual is {}, q_target is {}, diff is {}, epsilon is {}".format( jts["q_actual%s"%i], jts["q_target%s"%i]  , jts["q_actual%s"%i] - jts["q_target%s"%i], self.radialEpsilon))
+                    print("Waiting for end move, q_actual is {}, q_target is {}, diff is {}, epsilon is {}".format( jts["q_actual%s"%i], jts["q_target%s"%i]  , jts["q_actual%s"%i] - jts["q_target%s"%i], self.joinEpsilon))
                     finished = False
                     break
             if finished and not self.secmon.is_program_running():
@@ -382,7 +378,7 @@ class URRobot(object):
         self.secmon.cleanup()
         if self.rtmon:
             self.rtmon.stop()
-    shutdown = cleanup #this might be wrong since we could also shutdown the robot from this script
+    shutdown = cleanup #this might be wrong since we could also shutdown the robot hardware from this script
 
     def set_freedrive(self, val):
         if val:
@@ -395,6 +391,19 @@ class URRobot(object):
             self.send_program("set sim")
         else:
             self.send_program("set real")
+
+    def get_realtime_monitor(self):
+        """
+        return a pointer to the realtime monitor object
+        usefull to track robot position for example
+        """
+        if not self.rtmon:
+            self.logger.info("Opening real-time monitor socket")
+            self.rtmon = urrtmon.URRTMonitor(self.host)# som information is only available on rt interface
+            self.rtmon.start()
+        self.rtmon.set_csys(self.csys) 
+        return self.rtmon
+
 
 
 
@@ -412,7 +421,6 @@ class Robot(URRobot):
         self.csys = None
         self.csys_inv = None
         self.set_csys("Robot", m3d.Transform()) #identity
-        self.tracker = None
 
     def set_tcp(self, tcp):
         if type(tcp) == m3d.Transform:
@@ -589,14 +597,6 @@ class Robot(URRobot):
         if type(vector) == m3d.Vector:
             vector = vector.list
         return URRobot.set_gravity(self, vector)
-
-    def get_tracker(self):
-        """
-        return an object able to track robot move for logging
-        """
-        t = tracker.Tracker(self.host)
-        t.set_csys(self.csys)
-        return t
 
 
 if not MATH3D:
