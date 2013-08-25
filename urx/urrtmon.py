@@ -12,13 +12,15 @@ __license__ = "GPLv3"
 
 
 
-import os
+import logging
 import socket
 import struct 
 import time
 import threading
 
 import numpy as np
+
+import math3d as m3d
 
 class URRTMonitor(threading.Thread):
 
@@ -29,22 +31,36 @@ class URRTMonitor(threading.Thread):
     ## pose is not included!
     rtstruct540 = struct.Struct('>d6d6d6d6d6d6d6d6d18d')
 
-    def __init__(self, urHost, debug=False):
+    def __init__(self, urHost, loglevel=logging.WARNING):
         threading.Thread.__init__(self)
+        self.logger = logging.getLogger(self.__class__.__name__)
+        if len(logging.root.handlers) == 0: #dirty hack
+            logging.basicConfig()
+        self.logger.setLevel(loglevel)
         self.daemon = True
         self._stop_event = True
-        self._debug = debug
         self._dataEvent = threading.Condition()
         self._dataAccess = threading.Lock()
         self._rtSock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self._rtSock.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
         self._urHost = urHost
         ## Package data variables
         self._timestamp = None
+        self._ctrlTimestamp = None
         self._qActual = None
         self._qTarget = None
         self._tcp = None
         self._tcp_force = None 
         self.__recvTime = 0
+        self._last_ts = 0
+        self._buffering = False
+        self._buffer_lock = threading.Lock()
+        self._buffer = []
+        self._buffer_size_max = 100
+        self._current_csys = None
+
+    def set_current_csys(self, csys):
+        self._current_csys = csys
 
     def __recv_bytes(self, nBytes):
         ''' Facility method for receiving exactly "nBytes" bytes from
@@ -85,27 +101,19 @@ class URRTMonitor(threading.Thread):
                 return self._qTarget
     getTarget = q_target
     
-    def tcf_vec(self, wait=False, timestamp=False):
-        """ Compute the tool pose *6D-vector* based on the actual joint
-        values."""
-        tcfvec = np.zeros(6)
-        tcf = self.tcf_pose(wait=wait, timestamp=False)
-        tcfvec[:3] = tcf.pos.data
-        tcfvec[3:] = tcf.orient.toRotationVector().data
-        if timestamp:
-            return self._timestamp, tcfvec
-        else:
-            return tcfvec
-    getTCFVec = tcf_vec
-    
-    def tcf_pose(self, wait=False, timestamp=False):
+    def tcf_pose(self, wait=False, timestamp=False, ctrlTimestamp=False):
         """ Return the tool pose values."""
         if wait:
             self.wait()
         with self._dataAccess:
             tcf = self._tcp
-            if timestamp:
-                return self._timestamp, tcf
+            if ctrlTimestamp or timestamp:
+                ret = [tcf]
+                if timestamp:
+                    ret.insert(-1, self._timestamp)
+                if ctrlTimestamp:
+                    ret.insert(-1, self._ctrlTimestamp)
+                return ret
             else:
                 return tcf
     getTCF = tcf_pose
@@ -129,25 +137,54 @@ class URRTMonitor(threading.Thread):
         ## Record the timestamp for this logical package
         timestamp = self.__recvTime
         pkgsize = struct.unpack('>i', head)[0]
-        if self._debug:
-            print('Received header telling that package is %d bytes long'%pkgsize)
+        self.logger.debug('Received header telling that package is %d bytes long'%pkgsize)
         payload = self.__recv_bytes(pkgsize-4)
         if pkgsize >= 692:
             unp = self.rtstruct692.unpack(payload[:self.rtstruct692.size])
         elif pkgsize >= 540:
             unp = self.rtstruct540.unpack(payload[:self.rtstruct540.size])
         else:
-            print('Error, Received packet of length smaller than 540: ', pkgsize)
+            self.logger.warning('Error, Received packet of length smaller than 540: ', pkgsize)
             return
 
         with self._dataAccess:
             self._timestamp = timestamp
+            self._ctrlTimestamp = np.array(unp[0]) 
+            if (self._ctrlTimestamp - self._last_ts) > 0.010:
+                self.logger.warning("Error the controller failed to send us a packet", self._ctrlTimestamp - self._last_ts)
+            self._last_ts = self._ctrlTimestamp
             self._qActual = np.array(unp[31:37])
             self._qTarget = np.array(unp[1:7])
             self._tcp_force = np.array(unp[67:73])
             self._tcp = np.array(unp[73:79])
+
+            if self._current_csys:
+                tcp = self._current_csys * m3d.Transform(self._tcp)#might be a godd idea to remove dependancy on m3d
+                self._tcp = tcp.pose_vector
+        if self._buffering:
+            with self._buffer_lock:
+                self._buffer.append((self._timestamp, self._ctrlTimestamp, self._tcp, self._qActual))#FIXME use named arrays of allow to configure what data to buffer
+                if len(self._buffer) > self._buffer_size_max:
+                    self.logger.warning("Warning: buffer full")
+                    self._buffer.pop()
+
         with self._dataEvent:
             self._dataEvent.notifyAll()
+
+    def start_buffering(self, maxsize=100):
+        self._buffer = []
+        self._buffering = True
+        self._buffer_size_max = maxsize
+
+    def stop_buffering(self):
+        self._buffering = False
+
+    def pop_buffer(self):
+        with self._buffer_lock:
+            if len(self._buffer) > 0:
+                return self._buffer.pop(0)
+            else:
+                return None
 
     def get_all_data(self, wait=True):
         """
@@ -156,7 +193,7 @@ class URRTMonitor(threading.Thread):
         if wait:
             self.wait()
         with self._dataAccess:
-            return dict(timestamp=self._timestamp, qActual=self._qActual, qTarget=self._qTarget, tcp=self._tcp, tcp_force=self._tcp_force)
+            return dict(timestamp=self._timestamp, ctrltimestamp=self._ctrlTimestamp, qActual=self._qActual, qTarget=self._qTarget, tcp=self._tcp, tcp_force=self._tcp_force)
 
     def stop(self):
         #print(self.__class__.__name__+': Stopping')
@@ -177,8 +214,8 @@ class URRTMonitor(threading.Thread):
 
 
 def startupInteractive():
-    global urRTMon
     from optparse import OptionParser
+    from IPython import embed
     ## Require the urhost arg.
     parser = OptionParser()
     parser.add_option('--debug', action='store_true', default=False, dest='debug')
@@ -187,20 +224,16 @@ def startupInteractive():
     if len(args) != 1:
         raise Exception('Must have argument with ur-host name or ip!')
     urHost = args[0]
-    print('Connecting to UR Secondary socket inteface on "%s"'%urHost)
+    print('Connecting to UR real-time socket inteface on "%s"'%urHost)
     # # Start the connectors
     urRTMon = URRTMonitor(urHost, debug=opts.debug)
-    if opts.start:
-        urRTMon.start()
     # # Register for hard shutdown
-    import atexit
-    atexit.register(urRTMon.stop)
-    ## Drop to interactive
-    pystartfile = os.path.expanduser('~/.pythonstartup')
-    if os.path.isfile(pystartfile):
-        execfile(pystartfile)
-    import code
-    code.interact(None, None, globals())
+    try:
+        if opts.start:
+            urRTMon.start()
+        embed()
+    finally:
+        urRTMon.stop()
 
 if __name__ == '__main__':
     startupInteractive()

@@ -40,26 +40,43 @@ class Tracker(Process):
             self.inverse = self.calibration.inverse()
 
     def _save_data(self):
-        result = np.zeros(len(self._data), dtype=[ ('timestamp', 'float64') , ('pose', '6float64'), ('joints', '6float64') ])
-        for idx, data in enumerate(self._data):
-            if MATH3D:
-                trf = self.inverse * math3d.Transform(data[1])
-            else:
-                trf = data[1]
-            result[idx] = (data[0], trf.pose_vector, data[2] )
+        result = np.array(self._data, dtype=[ ('timestamp', 'float64'), ('ctrlTimestamp', 'float64'), ('pose', '6float64'), ('joints', '6float64') ])
+        if MATH3D:
+            nposes = []
+            for pose in result["pose"]:
+                trf = self.inverse * math3d.Transform(pose) 
+                nposes.append(trf.pose_vector) 
+            result["pose"] = np.array(nposes)
         self._queue.put(result)
 
+
+    def run_old(self):
+        self._data = []
+        rtmon = urrtmon.URRTMonitor(self.host)
+        rtmon.start()
+        while not self._stop_event.is_set():
+            timestamp, ctrlTimestamp, pose = rtmon.tcf_pose(wait=True, timestamp=True, ctrlTimestamp=True)
+            joints = rtmon.q_actual(wait=False, timestamp=False)
+            self._data.append((timestamp, ctrlTimestamp, pose, joints))
+        self._save_data()
+        self._finished.set()
 
     def run(self):
         self._data = []
         rtmon = urrtmon.URRTMonitor(self.host)
         rtmon.start()
+        rtmon.start_buffering()
         while not self._stop_event.is_set():
-            timestamp, pose = rtmon.tcf_pose(wait=True, timestamp=True)
-            joints = rtmon.q_actual(wait=False, timestamp=False)
-            self._data.append((timestamp, pose, joints))
+            data = rtmon.pop_buffer()
+            if data:
+                self._data.append(data)
+            else:
+                time.sleep(0.002)
         self._save_data()
+        rtmon.stop_buffering()
+        rtmon.stop()
         self._finished.set()
+
 
     def start_acquisition(self):
         self.start()
@@ -72,7 +89,7 @@ class Tracker(Process):
         self._stop_event.set()
         while not self._finished.is_set():
             time.sleep(0.01)
-        return self._queue.get()
+        return self._queue.get().copy()
 
 
 if __name__ == "__main__":
