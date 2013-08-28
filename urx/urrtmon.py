@@ -181,7 +181,7 @@ class URRTMonitor(threading.Thread):
     def stop_buffering(self):
         self._buffering = False
 
-    def pop_buffer(self):
+    def try_pop_buffer(self):
         """
         return oldest value in buffer
         """
@@ -190,6 +190,17 @@ class URRTMonitor(threading.Thread):
                 return self._buffer.pop(0)
             else:
                 return None
+
+    def pop_buffer(self):
+        """
+        return oldest value in buffer
+        """
+        while True:
+            with self._buffer_lock:
+                if len(self._buffer) > 0:
+                    return self._buffer.pop(0)
+            time.sleep(0.001)
+
 
     def get_buffer(self):
         """
