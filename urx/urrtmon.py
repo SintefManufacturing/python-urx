@@ -53,7 +53,8 @@ class URRTMonitor(threading.Thread):
         self._tcp = None
         self._tcp_force = None 
         self.__recvTime = 0
-        self._last_ts = 0
+        self._last_ctrl_ts = 0
+        #self._last_ts = 0
         self._buffering = False
         self._buffer_lock = threading.Lock()
         self._buffer = []
@@ -151,10 +152,14 @@ class URRTMonitor(threading.Thread):
 
         with self._dataAccess:
             self._timestamp = timestamp
+            # it seems that packet often arrives packed as two... maybe TCP_NODELAY is not set on UR controller??
+            #if (self._timestamp - self._last_ts) > 0.010:
+                #self.logger.warning("Error the we did not receive a packet for {}s ".format( self._timestamp - self._last_ts))
+            #self._last_ts = self._timestamp
             self._ctrlTimestamp = np.array(unp[0]) 
-            if (self._ctrlTimestamp - self._last_ts) > 0.010:
-                self.logger.warning("Error the controller failed to send us a packet", self._ctrlTimestamp - self._last_ts)
-            self._last_ts = self._ctrlTimestamp
+            if self._last_ctrl_ts != 0 and (self._ctrlTimestamp - self._last_ctrl_ts) > 0.010:
+                self.logger.warning("Error the controller failed to send us a packet: time since last packet {}s ".format( self._ctrlTimestamp - self._last_ctrl_ts))
+            self._last_ctrl_ts = self._ctrlTimestamp
             self._qActual = np.array(unp[31:37])
             self._qTarget = np.array(unp[1:7])
             self._tcp_force = np.array(unp[67:73])
