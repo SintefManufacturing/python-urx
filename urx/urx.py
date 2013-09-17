@@ -339,14 +339,14 @@ class URRobot(object):
             self.wait_for_move()
             return self.getl()
 
-    def moveps(self, pose_list, acc=0.01, vel=0.01 , radius=0.01, wait=True):
+    def movels(self, pose_list, acc=0.01, vel=0.01 , radius=0.01, wait=True):
         """
         Concatenate several movel commands and applies a blending radius
         pose_list is a list of pose. 
         """
         header = "def myProg():\n"
         end = "end\n"
-        template = "movep(p[{},{},{},{},{},{}], a={}, v={}, r={})\n"
+        template = "movel(p[{},{},{},{},{},{}], a={}, v={}, r={})\n"
         prog = header
         for idx, pose in enumerate(pose_list):
             pose.append(acc)
@@ -556,10 +556,10 @@ class Robot(URRobot):
     def movel(self, pose, acc=None, vel=None, wait=True, relative=False, radius=0.01):
         """
         move linear to given pose in current csys
-        if pose is a list of poses then moveps is called
+        if pose is a list of poses then movels is called
         """
         if type(pose[0]) in (list, tuple):
-            return self.moveps(pose, acc, vel, radius, wait)
+            return self.movels(pose, acc, vel, radius, wait)
         t = m3d.Transform(pose)
         if relative:
             return self.add_transform_base(t, acc, vel, wait, process=False)
@@ -580,18 +580,18 @@ class Robot(URRobot):
         t = self.get_transform(wait)
         return t.pose_vector
 
-    def moveps(self, pose_list, acc=0.01, vel=0.01 , radius=0.01, wait=True):
+    def movels(self, pose_list, acc=0.01, vel=0.01 , radius=0.01, wait=True):
         """
         Concatenate several movep commands and applies a blending radius
         pose_list is a list of pose. 
         """
         new_poses = []
-        for idx, pose in enumerate(pose_list):
+        for pose in pose_list:
             t = self.csys * m3d.Transform(pose)
             pose = t.pose_vector
             pose = [round(i, self.max_float_length) for i in pose]
             new_poses.append(pose)
-        return URRobot(new_poses, acc, vel, radius, wait)
+        return URRobot.movels(self, new_poses, acc, vel, radius, wait)
 
     def set_gravity(self, vector):
         if type(vector) == m3d.Vector:
