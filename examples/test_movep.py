@@ -4,7 +4,7 @@ import logging
 
 
 if __name__ == "__main__":
-    rob = urx.Robot("192.168.128.120", logLevel=logging.INFO)
+    rob = urx.Robot("192.168.1.6", logLevel=logging.INFO)
     try:
         l = 0.1
         v = 0.07
