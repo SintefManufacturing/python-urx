@@ -5,5 +5,5 @@ __version__ = "0.8"
 
 
 
-from .urrobot import Robot, RobotException, URRobot
+from .robot import Robot, RobotException, URRobot
 

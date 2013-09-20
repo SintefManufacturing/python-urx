@@ -550,7 +550,6 @@ class Robot(URRobot):
         pose = self.get_transform()
         v = self.csys.orient * pose.orient * m3d.Vector(velocities[:3])
         w = self.csys.orient * pose.orient * m3d.Vector(velocities[3:])
-        print(pose, v, w)
         URRobot.speedl(self, np.concatenate((v.data, w.data)), acc, min_time)
 
     def movel(self, pose, acc=None, vel=None, wait=True, relative=False, radius=0.01):
@@ -578,7 +577,7 @@ class Robot(URRobot):
         return current transformation from tcp to current csys
         """
         t = self.get_transform(wait)
-        return t.pose_vector
+        return t.pose_vector.tolist()
 
     def movels(self, pose_list, acc=0.01, vel=0.01 , radius=0.01, wait=True):
         """
