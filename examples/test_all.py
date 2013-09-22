@@ -18,6 +18,7 @@ if __name__ == "__main__":
         a = 0.3
         r = 0.01
         print("Digital out 0 and 1 are: ", rob.get_digital_out(0), rob.get_digital_out(1) )
+        print("Analog inputs are: ", rob.get_analog_inputs())
         j = rob.getj()
         print("Initial joint configuration is ", j)
         t = rob.get_transform()

@@ -7,7 +7,6 @@ from __future__ import absolute_import # necessary for import tricks to work wit
 
 __author__ = "Olivier Roulet-Dubonnet"
 __copyright__ = "Copyright 2011-2013, Sintef Raufoss Manufacturing"
-__credits__ = ["Olivier Roulet-Dubonnet"]
 __license__ = "GPLv3"
 
 import logging
@@ -19,7 +18,7 @@ try:
     import numpy as np
 except ImportError:
     MATH3D = False
-    print("pymath3d library could not be found on this computer, disabling use of matrices")
+    print("python-math3d library could not be found on this computer, disabling use of matrices")
 
 from urx import urrtmon 
 from urx import ursecmon
@@ -54,10 +53,10 @@ class URRobot(object):
             self.rtmon = self.get_realtime_monitor()
         #the next 3 values must be conservative! otherwise we may wait forever
         self.joinEpsilon = 0.01 # precision of joint movem used to wait for move completion
-        #URScript is  limited in the character length of floats it accepts
+        # It seems URScript is  limited in the character length of floats it accepts
         self.max_float_length = 6 # FIXME: check max length!!!
 
-        self.secmon.wait() # make sure we get data to not suprise clients
+        self.secmon.wait() # make sure we get data from robot before letting clients access our methods
         
 
     def __repr__(self):
@@ -143,47 +142,31 @@ class URRobot(object):
         """
         get analog input 
         """
-        data = self.secmon.get_all_data()
-        return data["MasterBoardData"]["analogInput0"], data["MasterBoardData"]["analogInput1"]
+        return self.secmon.get_analog_inputs()
 
-
-    def get_analog_in(self, nb):
+    def get_analog_in(self, nb, wait=False):
         """
         get analog input 
         """
-        data = self.secmon.get_all_data()
-        return data["MasterBoardData"]["analogInput" + str(nb)]
+        return self.secmon.get_analog_in(nb, wait)
 
     def get_digital_in_bits(self):
         """
         get digital output
         """
-        data = self.secmon.get_all_data()
-        return data["MasterBoardData"]["digitalInputBits"]
+        return self.secmon.get_digital_in_bits()
 
-    def get_digital_in(self, nb):
+    def get_digital_in(self, nb, wait=False):
         """
         get digital output
         """
-        data = self.secmon.get_all_data()
-        val = data["MasterBoardData"]["digitalInputBits"]
-        mask = 1 << nb
-        if  (val & mask):
-            return 1
-        else:
-            return 0
+        return self.secmon.get_digital_in(nb, wait)
 
-    def get_digital_out(self, val):
+    def get_digital_out(self, val, wait=False):
         """
         get digital output
         """
-        data = self.secmon.get_all_data()
-        output = data["MasterBoardData"]["digitalOutputBits"]
-        mask = 1 << val
-        if  (output & mask):
-            return 1
-        else:
-            return 0
+        return self.secmon.get_digital_out(val , wait)
 
     def set_analog_out(self, output, val):
         """
@@ -236,7 +219,7 @@ class URRobot(object):
             for i in range(0, 6):
                 #Rmq: q_target is an interpolated target we have no control over
                 if abs(jts["q_actual%s"%i] - jts["q_target%s"%i]) > self.joinEpsilon:
-                    print("Waiting for end move, q_actual is {}, q_target is {}, diff is {}, epsilon is {}".format( jts["q_actual%s"%i], jts["q_target%s"%i]  , jts["q_actual%s"%i] - jts["q_target%s"%i], self.joinEpsilon))
+                    self.logger.debug("Waiting for end move, q_actual is {}, q_target is {}, diff is {}, epsilon is {}".format( jts["q_actual%s"%i], jts["q_target%s"%i]  , jts["q_actual%s"%i] - jts["q_target%s"%i], self.joinEpsilon))
                     finished = False
                     break
             if finished and not self.secmon.is_program_running():
@@ -410,7 +393,7 @@ class URRobot(object):
 class Robot(URRobot):
     """
     Generic Python interface to an industrial robot.
-    Compare to the URRobot class, this class adds the possibilty to work directly with matrices
+    Compared to the URRobot class, this class adds the possibilty to work directly with matrices
     and includes support for calibrating the robot coordinate system
     """
     def __init__(self, host, useRTInterface=False, logLevel = logging.WARN, parserLogLevel=logging.WARN):
@@ -498,6 +481,8 @@ class Robot(URRobot):
             pose = URRobot.movel(self, t.pose_vector, acc=acc, vel=vel, wait=wait)
         if pose != None : #movel does not return anything when wait is False
             return self.csys_inv * m3d.Transform(pose)
+
+    set_transform = apply_transform #since we have set_pos, set_orient, we should be consistent and use set for tranform to ..
 
     def add_transform_base(self, trans, acc=None, vel=None, wait=True, process=False):
         """

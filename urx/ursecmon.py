@@ -325,6 +325,46 @@ class SecondaryMonitor(Thread):
             else:
                 return None
 
+    def get_digital_out(self, nb, wait=False):
+        if wait:
+            self.wait()
+        with self._dictLock:
+            output = self._dict["MasterBoardData"]["digitalOutputBits"]
+        mask = 1 << nb
+        if  (output & mask):
+            return 1
+        else:
+            return 0
+
+    def get_digital_in(self, nb, wait=False):
+        if wait:
+            self.wait()
+        with self._dictLock:
+            output = self._dict["MasterBoardData"]["digitalInputBits"]
+        mask = 1 << nb
+        if  (output & mask):
+            return 1
+        else:
+            return 0
+
+    def get_analog_in(self, nb, wait=False):
+        if wait:
+            self.wait()
+        with self._dictLock:
+            return self._dict["MasterBoardData"]["analogInput" + str(nb)]
+
+    def get_digital_in_bits(self, wait=False):
+        if wait:
+            self.wait()
+        with self._dictLock:
+            return self._dict["MasterBoardData"]["digitalInputBits"]
+
+    def get_analog_inputs(self, wait=False):
+        if wait:
+            self.wait()
+        with self._dictLock:
+            return self._dict["MasterBoardData"]["analogInput0"], self._dict["MasterBoardData"]["analogInput1"]
+
     def is_program_running(self, wait=False):
         """
         return True if robot is executing a program
