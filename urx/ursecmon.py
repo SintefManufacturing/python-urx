@@ -3,7 +3,7 @@ This file contains 2 classes:
     - ParseUtils containing utilies to parse data from UR robot
     - SecondaryMonitor, a class opening a socket to the robot and with methods to access data and send programs to the robot
 Both use data from the secondary port of the URRobot.
-Only the last connected socket on 3001 is the primary client !!!! so it is unreliable to rely on it
+Only the last connected socket on 3001 is the primary client !!!! So do not rely on it unless you know no other client is running (Hint the UR java interface is a client...)
 http://support.universal-robots.com/Technical/PrimaryAndSecondaryClientInterface
 """
 
