@@ -190,13 +190,12 @@ class URRobot(object):
         self.logger.debug("Waiting for move completion")
         # it is necessary to wait since robot may takes a while to get into running state, 
         # for a physical move 0.5s is very short
-        for i in range(3):
+        for _ in range(3):
             self.secmon.wait()
-            if not radius or not MATH3D:
-                return self._wait_for_move()
-            else:
-                self._wait_for_move_radius(radius, target)
-
+        if not radius or not MATH3D:
+            return self._wait_for_move()
+        else:
+            return self._wait_for_move_radius(radius, target)
 
     def _wait_for_move(self):
         while True:
@@ -215,14 +214,25 @@ class URRobot(object):
                 return
 
     def _wait_for_move_radius(self, radius, target):
+        print("Wait move with radius")
+        target = m3d.Transform(target)
         while True:
             if not self.is_running():
                 raise RobotException("Robot stopped")
             pose = self.get_pose(wait=True)
             dist = pose.dist(target)
+            print("dist is ", dist, radius)
             if (dist < radius) or not self.secmon.is_program_running():
                 self.logger.debug("move has ended")
                 return
+
+    def dist(self, poseA, poseB):
+        """
+        Return the metric distance between two poses as unweighted combined linear
+        and angular distance.
+        This would be better not to rely on math3d just for that method...
+        """
+        raise NotImplementedError
 
     def getj(self, wait=False):
         """
@@ -325,15 +335,14 @@ class URRobot(object):
     def get_pose(self, wait=False):
         return self.getl(wait)
 
-    def movec(self, pose, pose_via, pose_to, acc=0.01, vel=0.01, radius=0, wait=True):
+    def movec(self, pose_via, pose_to, acc=0.01, vel=0.01, radius=0, wait=True):
         """
         Move Circular: Move to position (circular in tool-space)
         see UR documentation
         """
-        pose = [round(i, self.max_float_length) for i in pose]
         pose_via = [round(i, self.max_float_length) for i in pose_via]
         pose_to = [round(i, self.max_float_length) for i in pose_to]
-        prog = "movec(p%s, p%s, p%s, a=%s, v=%s, r=%s)" % (pose, pose_via, pose_to, acc, vel, radius)
+        prog = "movec(p%s, p%s, a=%s, v=%s, r=%s)" % (pose_via, pose_to, acc, vel, radius)
         self.send_program(prog)
         if not wait:
             return None
@@ -564,13 +573,20 @@ class Robot(URRobot):
         move linear to given pose in current csys
         if pose is a list of poses then movels is called
         """
-        if type(pose[0]) in (list, tuple):
-            return self.movels(pose, acc, vel, radius, wait=wait)
         t = m3d.Transform(pose)
         if relative:
             return self.add_transform_base(t, acc, vel, wait=wait, process=False)
         else:
             return self.apply_transform(t, acc, vel, radius, wait=wait, process=False)
+
+    def movec(self, pose_via, pose_to, acc=0.01, vel=0.01, radius=0, wait=True):
+        """
+        Move Circular: Move to position (circular in tool-space)
+        see UR documentation
+        """
+        via = self.csys * m3d.Transform(pose_via)
+        to = self.csys * m3d.Transform(pose_to)
+        return URRobot.movec(self, via.pose_vector, to.pose_vector, acc=acc, vel=vel, radius=radius, wait=wait)
 
     def movel_tool(self, pose, acc=None, vel=None, wait=True):
         """
@@ -580,6 +596,7 @@ class Robot(URRobot):
         self.add_transform_tool(t, acc, vel, wait=wait, process=False)
 
     def movep(self, pose, acc=None, vel=None, radius=0, wait=True, relative=False):
+        pose = m3d.Transform(pose)
         if relative:
             return self.add_transform_base(pose, acc, vel, wait=wait, process=True, radius=radius)
         else:
