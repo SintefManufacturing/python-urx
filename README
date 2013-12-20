@@ -38,7 +38,6 @@ while True :
         break
 
 robot.movel(x, y, z, rx, ry, rz), wait=False)
->>>>>>> 43397b6cea74844db7a98bc58649fda3fce86cba
 while.robot.getForce() < 50:
     sleep(0.01)
     if not robot.is_program_running():

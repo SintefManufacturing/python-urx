@@ -304,7 +304,7 @@ class URRobot(object):
         """
         Send a movep command to the robot. See URScript documentation.
         From URX the main advantage of movep is that it allows for path blending if
-        math3d is installed
+        math3d is installed (BROKEN!)
         """
         if relative:
             l = self.getl()
@@ -461,8 +461,7 @@ class Robot(URRobot):
         trans.orient = orient
         self.apply_transform(trans, acc, vel, radius, wait=wait)
 
-    def set_orientation(self, orient, acc=None, vel=None, wait=True):
-        self.orient(orient, acc, vel, wait=wait)
+    set_orientation = orient
 
     def translate(self, vect, acc=None, vel=None, radius=0, wait=True):
         """
@@ -499,7 +498,7 @@ class Robot(URRobot):
         if process is True, movep is used instead of movel
         if radius is not 0 and wait is True, the method will return when tcp
         is radius close to the target. It is then possible to send another command 
-        and the controller will blend the path. Blending only works with process(movep).
+        and the controller will blend the path. Blending only works with process(movep). (BROKEN!)
         """
         if not acc: 
             acc = self.default_linear_acceleration
