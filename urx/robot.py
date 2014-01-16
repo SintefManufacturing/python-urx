@@ -430,7 +430,6 @@ class Robot(URRobot):
         self.default_linear_velocity = 0.01
         self.csys_dict = {}
         self.csys = None
-        self.csys_inv = None
         self.set_csys("Robot", m3d.Transform()) #identity
 
     def set_tcp(self, tcp):
@@ -452,7 +451,6 @@ class Robot(URRobot):
         if matrix:
             self.add_csys(name, matrix)
         self.csys = self.csys_dict[name]
-        self.csys_inv = self.csys.inverse()
 
     def orient(self, orient, acc=None, vel=None, radius=0, wait=True):
         if type(orient) is not m3d.Orientation:
@@ -510,7 +508,7 @@ class Robot(URRobot):
         else:
             pose = URRobot.movel(self, t.pose_vector, acc=acc, vel=vel, wait=wait, radius=radius)
         if pose != None : #movel does not return anything when wait is False
-            return self.csys_inv * m3d.Transform(pose)
+            return self.csys.inverse * m3d.Transform(pose)
 
     set_transform = apply_transform #since we have set_pos, set_orient, we should be consistent and use set for tranform to ..
 
@@ -533,7 +531,7 @@ class Robot(URRobot):
         get current transform from base to to tcp
         """
         pose = URRobot.getl(self, wait)
-        trans = self.csys_inv * m3d.Transform(pose) 
+        trans = self.csys.inverse * m3d.Transform(pose) 
         return trans
 
     def get_pose(self, wait=False):
