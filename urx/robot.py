@@ -510,7 +510,6 @@ class Robot(URRobot):
         if pose != None : #movel does not return anything when wait is False
             return self.csys.inverse * m3d.Transform(pose)
 
-    set_transform = apply_transform #since we have set_pos, set_orient, we should be consistent and use set for tranform to ..
 
     def add_transform_base(self, trans, acc=None, vel=None, radius=0, wait=True, process=False):
         """
@@ -550,31 +549,44 @@ class Robot(URRobot):
 
     def speedl(self, velocities, acc, min_time):
         """
-        move at given velocities until minimum min_time seconds
+        move at given velocities in base csys until minimum min_time seconds
         """
+        #r = m3d.Transform(velocities)
         v = self.csys.orient * m3d.Vector(velocities[:3])
         w = self.csys.orient * m3d.Vector(velocities[3:])
-        URRobot.speedl(self, np.concatenate((v.data, w.data)), acc, min_time)
+        URRobot.speedl(self, np.concatenate((v.array, w.array)), acc, min_time)
 
     def speedl_tool(self, velocities, acc, min_time):
         """
-        move in tool coordinate at given velocities until minimum min_time seconds
+        move at given velocities in tool csys until minimum min_time seconds
         """
         pose = self.get_transform()
         v = self.csys.orient * pose.orient * m3d.Vector(velocities[:3])
         w = self.csys.orient * pose.orient * m3d.Vector(velocities[3:])
-        URRobot.speedl(self, np.concatenate((v.data, w.data)), acc, min_time)
+        URRobot.speedl(self, np.concatenate((v.array, w.array)), acc, min_time)
 
     def movel(self, pose, acc=None, vel=None, wait=True, relative=False, radius=0.01):
         """
         move linear to given pose in current csys
-        if pose is a list of poses then movels is called
         """
         t = m3d.Transform(pose)
         if relative:
             return self.add_transform_base(t, acc, vel, wait=wait, process=False)
         else:
             return self.apply_transform(t, acc, vel, radius, wait=wait, process=False)
+
+    def movels(self, pose_list, acc=0.01, vel=0.01 , radius=0.01, wait=True):
+        """
+        Concatenate several movep commands and applies a blending radius
+        pose_list is a list of pose. 
+        """
+        new_poses = []
+        for pose in pose_list:
+            t = self.csys * m3d.Transform(pose)
+            pose = t.pose_vector
+            pose = [round(i, self.max_float_length) for i in pose]
+            new_poses.append(pose)
+        return URRobot.movels(self, new_poses, acc, vel, radius, wait=wait)
 
     def movec(self, pose_via, pose_to, acc=0.01, vel=0.01, radius=0, wait=True):
         """
@@ -606,24 +618,14 @@ class Robot(URRobot):
         t = self.get_transform(wait)
         return t.pose_vector.tolist()
 
-    def movels(self, pose_list, acc=0.01, vel=0.01 , radius=0.01, wait=True):
-        """
-        Concatenate several movep commands and applies a blending radius
-        pose_list is a list of pose. 
-        """
-        new_poses = []
-        for pose in pose_list:
-            t = self.csys * m3d.Transform(pose)
-            pose = t.pose_vector
-            pose = [round(i, self.max_float_length) for i in pose]
-            new_poses.append(pose)
-        return URRobot.movels(self, new_poses, acc, vel, radius, wait=wait)
-
     def set_gravity(self, vector):
         if type(vector) == m3d.Vector:
             vector = vector.list
         return URRobot.set_gravity(self, vector)
 
+    set_transform = apply_transform #since we have set_pos, set_orient, we should be consistent and use set for tranform to ..
+    set_pose = apply_transform
+    set_pose_tool = add_transform_tool
 
 if not MATH3D:
     Robot = URRobot
@@ -631,14 +633,14 @@ if not MATH3D:
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO) #enable logging
     try:
-        #robot = Robot( '192.168.1.6')
-        robot = Robot( '192.168.1.5')
+        if len(sys.argv) > 1:
+            host = sys-argv[0]
+        else:
+            host = '192.168.1.5'
+        robot = Robot( host )
         r = robot
 
-        from IPython.frontend.terminal.embed import InteractiveShellEmbed
-        ipshell = InteractiveShellEmbed( banner1="\n\n  robot object is available  \n\n")
-        ipshell(local_ns=locals())
-
+        from IPython import embed 
     finally:
         if "robot" in dir():
             robot.cleanup()
