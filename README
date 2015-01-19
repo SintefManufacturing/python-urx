@@ -16,6 +16,9 @@ urx is a python library to control a robot from 'Universal robot'. It has curren
 Both the 'secondary port' interface and the real-time/matlab interface of the UR controller are used. 
 urx can optionally use the python-math3d https://launchpad.net/pymath3d library to receive and send transformation matrices to the robot
 
+urx was primarily developed by Olivier Roulet-Dubonnet for Sintef Raufoss Manufacturing and is published under the GPL license: 
+http://www.sintef.no/manufacturing/
+
 Example use:
 
 import urx
