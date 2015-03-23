@@ -6,7 +6,7 @@ http://support.universal-robots.com/URRobot/RemoteAccess
 from __future__ import absolute_import # necessary for import tricks to work with python2
 
 __author__ = "Olivier Roulet-Dubonnet"
-__copyright__ = "Copyright 2011-2013, Sintef Raufoss Manufacturing"
+__copyright__ = "Copyright 2011-2015, Sintef Raufoss Manufacturing"
 __license__ = "GPLv3"
 
 import logging
@@ -37,16 +37,13 @@ class URRobot(object):
     The RT interfaces is only used for the get_force related methods
     Rmq: A program sent to the robot i executed immendiatly and any running program is stopped
     """
-    def __init__(self, host, useRTInterface=False, logLevel=logging.WARN, parserLogLevel=logging.WARN):
+    def __init__(self, host, useRTInterface=False):
         self.logger = logging.getLogger(self.__class__.__name__)
-        if len(logging.root.handlers) == 0: #dirty hack
-            logging.basicConfig()
-        self.logger.setLevel(logLevel)
         self.host = host
         self.csys = None 
         
         self.logger.info("Opening secondary monitor socket")
-        self.secmon = ursecmon.SecondaryMonitor(self.host, logLevel=logLevel, parserLogLevel=parserLogLevel) #data from robot at 10Hz
+        self.secmon = ursecmon.SecondaryMonitor(self.host) #data from robot at 10Hz
        
         self.rtmon = None
         if useRTInterface:
@@ -424,8 +421,8 @@ class Robot(URRobot):
     Compared to the URRobot class, this class adds the possibilty to work directly with matrices
     and includes support for calibrating the robot coordinate system
     """
-    def __init__(self, host, useRTInterface=False, logLevel = logging.WARN, parserLogLevel=logging.WARN):
-        URRobot.__init__(self, host, useRTInterface, logLevel=logLevel, parserLogLevel=parserLogLevel)
+    def __init__(self, host, useRTInterface=False):
+        URRobot.__init__(self, host, useRTInterface)
         self.default_linear_acceleration = 0.01
         self.default_linear_velocity = 0.01
         self.csys_dict = {}

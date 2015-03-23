@@ -33,9 +33,8 @@ class TimeoutException(Exception):
 
 
 class ParserUtils(object):
-    def __init__(self, logLevel=logging.WARN):
+    def __init__(self):
         self.logger = logging.getLogger(__name__)
-        self.logger.setLevel(logLevel)
 
     def parse(self, data):
         """
@@ -194,11 +193,10 @@ class SecondaryMonitor(Thread):
     """
     Monitor data from secondary port and send programs to robot
     """
-    def __init__(self, host, logLevel=logging.WARN, parserLogLevel=logging.WARN):
+    def __init__(self, host):
         Thread.__init__(self)
         self.logger = logging.getLogger(self.__class__.__name__)
-        self.logger.setLevel(logLevel)
-        self._parser = ParserUtils(parserLogLevel)
+        self._parser = ParserUtils()
         self._dict = {}
         self._dictLock = Lock()
         self.host = host
