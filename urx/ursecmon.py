@@ -35,6 +35,7 @@ class TimeoutException(Exception):
 class ParserUtils(object):
     def __init__(self):
         self.logger = logging.getLogger(__name__)
+        self.is_v30 = False
 
     def parse(self, data):
         """
@@ -49,22 +50,27 @@ class ParserUtils(object):
                 allData["SecondaryClientData"] = self._get_data(pdata, "!iB", ("size", "type"))
                 data = (pdata + data)[5:] # This is the total size so we resend data to parser
             elif ptype == 0:
-                allData["RobotModeData"] = self._get_data(pdata, "!iBQ???????Bd", ("size", "type", "timestamp", "isRobotConnected", "isRealRobotEnabled", "isPowerOnRobot", "isEmergencyStopped", "isSecurityStopped", "isProgramRunning", "isProgramPaused", "robotMode", "speedFraction"))
+                # this parses RobotModeData for versions >=3.0 (i.e. 3.0)
+                if psize == 38:
+                    self.is_v30 = True
+                    allData['RobotModeData'] = self._get_data(pdata, "!IBQ???????BBdd", ("size", "type", "timestamp", "isRobotConnected", "isRealRobotEnabled", "isPowerOnRobot", "isEmergencyStopped", "isSecurityStopped", "isProgramRunning", "isProgramPaused", "robotMode", "controlMode", "speedFraction", "speedScaling"))
+                else:
+                    allData["RobotModeData"] = self._get_data(pdata, "!iBQ???????Bd", ("size", "type", "timestamp", "isRobotConnected", "isRealRobotEnabled", "isPowerOnRobot", "isEmergencyStopped", "isSecurityStopped", "isProgramRunning", "isProgramPaused", "robotMode", "speedFraction"))
             elif ptype == 1:
                 tmpstr = ["size", "type"]
                 for i in range(0, 6):
-                    tmpstr += ["q_actual%s" % i, "q_target%s" % i, "qd_actual%s" % i, "I_actual%s" % i, "V_actual%s" % i, "T_motor%s" % i ,"T_micro%s" % i, "jointMode%s" % i]
+                    tmpstr += ["q_actual%s" % i, "q_target%s" % i, "qd_actual%s" % i, "I_actual%s" % i, "V_actual%s" % i, "T_motor%s" % i, "T_micro%s" % i, "jointMode%s" % i]
 
                 allData["JointData"] = self._get_data(pdata, "!iB dddffffB dddffffB dddffffB dddffffB dddffffB dddffffB", tmpstr)
 
             elif ptype == 4:
                 allData["CartesianInfo"] = self._get_data(pdata, "iBdddddd", ("size", "type", "X", "Y", "Z", "Rx", "Ry", "Rz"))
             elif ptype == 5:
-                allData["LaserPointer(OBSOLETE)"] = self._get_data(pdata, "iBddd" , ("size", "type"))
+                allData["LaserPointer(OBSOLETE)"] = self._get_data(pdata, "iBddd", ("size", "type"))
             elif ptype == 3:
-                allData["MasterBoardData"] = self._get_data(pdata, "iBhhbbddbbddffffBBb" , ("size", "type", "digitalInputBits", "digitalOutputBits", "analogInputRange0", "analogInputRange1", "analogInput0", "analogInput1", "analogInputDomain0", "analogInputDomain1", "analogOutput0", "analogOutput1", "masterBoardTemperature", "robotVoltage48V", "robotCurrent", "masterIOCurrent"))#, "masterSafetyState" ,"masterOnOffState", "euromap67InterfaceInstalled"   ))
+                allData["MasterBoardData"] = self._get_data(pdata, "iBhhbbddbbddffffBBb", ("size", "type", "digitalInputBits", "digitalOutputBits", "analogInputRange0", "analogInputRange1", "analogInput0", "analogInput1", "analogInputDomain0", "analogInputDomain1", "analogOutput0", "analogOutput1", "masterBoardTemperature", "robotVoltage48V", "robotCurrent", "masterIOCurrent"))#, "masterSafetyState" ,"masterOnOffState", "euromap67InterfaceInstalled"   ))
             elif ptype == 2:
-                allData["ToolData"] = self._get_data(pdata, "iBbbddfBffB" , ("size", "type", "analoginputRange2", "analoginputRange3", "analogInput2", "analogInput3", "toolVoltage48V", "toolOutputVoltage", "toolCurrent", "toolTemperature", "toolMode" ))
+                allData["ToolData"] = self._get_data(pdata, "iBbbddfBffB", ("size", "type", "analoginputRange2", "analoginputRange3", "analogInput2", "analogInput3", "toolVoltage48V", "toolOutputVoltage", "toolCurrent", "toolTemperature", "toolMode"))
 
             #elif ptype == 8:
                     #allData["varMessage"] = self._get_data(pdata, "!iBQbb iiBAcAc", ("size", "type", "timestamp", "source", "robotMessageType", "code", "argument", "titleSize", "messageTitle", "messageText"))
@@ -90,7 +96,7 @@ class ParserUtils(object):
                 elif tmp["robotMessageType"] == 5:
                     allData["keyMessage"] = self._get_data(pdata, "!iBQbb iiAc", ("size", "type", "timestamp", "source", "robotMessageType", "code", "argument", "messageText"))
                 else:
-                    self.logger.debug("Message type parser not implemented ", tmp)
+                    self.logger.debug("Message type parser not implemented %s", tmp)
             else:
                 self.logger.debug("Unknown packet type %s with size %s" % (ptype, psize))
 
@@ -117,7 +123,7 @@ class ParserUtils(object):
                 if j == len(fmt) - 2: # we are last element, size is the rest of data in packet
                     arraysize = len(tmpdata)
                 else: # size should be given in last element
-                    asn =  names[i-1]
+                    asn = names[i-1]
                     if not asn.endswith("Size"):
                         raise ParsingException("Error, array without size ! %s %s" % (asn, i))
                     else:
@@ -153,7 +159,7 @@ class ParserUtils(object):
             if psize < 5: 
                 raise ParsingException("Error, declared length of data smaller than its own header(5): ", psize)
             elif psize > len(data):
-                raise ParsingException("Error, length of data smaller (%s) than declared (%s)" %( len(data), psize))
+                raise ParsingException("Error, length of data smaller (%s) than declared (%s)" %(len(data), psize))
         return psize, ptype, data[:psize], data[psize:]
 
     def find_first_packet(self, data):
@@ -170,18 +176,18 @@ class ParserUtils(object):
                     data = data[1:]
                     counter += 1
                     if counter > limit:
-                        self.logger.warn("tried {} times to find a packet in data, advertised packet size: {}, type: {}".format(counter, psize, ptype))
+                        self.logger.warn("tried %s times to find a packet in data, advertised packet size: %s, type: %s", counter, psize, ptype)
                         self.logger.warn("Data length: {}".format(len(data)))
                         limit = limit * 10
                 elif len(data) >= psize:
-                    self.logger.debug("Got packet with size {0} and type {1}".format(psize, ptype))
+                    self.logger.debug("Got packet with size %s and type %s", psize, ptype)
                     if counter:
                         self.logger.info("Remove {0} bytes of garbage at begining of packet".format(counter))
                     #ok we we have somehting which looks like a packet"
                     return (data[:psize], data[psize:])
                 else:
                     #packet is not complete
-                    self.logger.debug("Packet is not complete, advertised size is {0}, received size is {1}, type is {2}".format(psize, len(data), ptype))
+                    self.logger.debug("Packet is not complete, advertised size is %s, received size is %s, type is %s", psize, len(data), ptype)
                     return None
             else:
                 #self.logger.debug("data smaller than 5 bytes")
@@ -246,29 +252,38 @@ class SecondaryMonitor(Thread):
                 with self._dictLock:
                     self._dict = tmpdict 
             except ParsingException as ex:
-                self.logger.warn("Error parsing one packet from urrobot: " + str(ex) )
+                self.logger.warn("Error parsing one packet from urrobot: " + str(ex))
                 continue
 
             if "RobotModeData" not in self._dict:
-                self.logger.warn( "Got a packet from robot without RobotModeData, strange ...")
+                self.logger.warn("Got a packet from robot without RobotModeData, strange ...")
                 continue
 
             self.lastpacket_timestamp = time.time() 
-
-            if self._dict["RobotModeData"]["robotMode"] == 0 \
+            
+            if self._parser.is_v30:
+                if self._dict["RobotModeData"]["robotMode"] == 7 \
                             and self._dict["RobotModeData"]["isRealRobotEnabled"] == True \
                             and self._dict["RobotModeData"]["isEmergencyStopped"] == False \
                             and self._dict["RobotModeData"]["isSecurityStopped"] == False \
                             and self._dict["RobotModeData"]["isRobotConnected"] == True \
                             and self._dict["RobotModeData"]["isPowerOnRobot"] == True:
-                self.running = True
+                    self.running = True
             else:
-                if self.running == True:
-                    self.logger.error("Robot not running: " + str( self._dict["RobotModeData"]))
-                self.running = False
-            with self._dataEvent:
-                #print("X: new data")
-                self._dataEvent.notifyAll()
+                if self._dict["RobotModeData"]["robotMode"] == 0 \
+                            and self._dict["RobotModeData"]["isRealRobotEnabled"] == True \
+                            and self._dict["RobotModeData"]["isEmergencyStopped"] == False \
+                            and self._dict["RobotModeData"]["isSecurityStopped"] == False \
+                            and self._dict["RobotModeData"]["isRobotConnected"] == True \
+                            and self._dict["RobotModeData"]["isPowerOnRobot"] == True:
+                    self.running = True
+                else:
+                    if self.running == True:
+                        self.logger.error("Robot not running: " + str(self._dict["RobotModeData"]))
+                    self.running = False
+                with self._dataEvent:
+                    #print("X: new data")
+                    self._dataEvent.notifyAll()
 
     def _get_data(self):
         """
@@ -294,7 +309,7 @@ class SecondaryMonitor(Thread):
         with self._dataEvent:
             self._dataEvent.wait(timeout)
             if tstamp == self.lastpacket_timestamp:
-                raise TimeoutException("Did not receive a valid data packet from robot in {}".format(timeout) )
+                raise TimeoutException("Did not receive a valid data packet from robot in {}".format(timeout))
 
     def get_cartesian_info(self, wait=False):
         if wait:
@@ -329,7 +344,7 @@ class SecondaryMonitor(Thread):
         with self._dictLock:
             output = self._dict["MasterBoardData"]["digitalOutputBits"]
         mask = 1 << nb
-        if  (output & mask):
+        if  output & mask:
             return 1
         else:
             return 0
@@ -340,7 +355,7 @@ class SecondaryMonitor(Thread):
         with self._dictLock:
             output = self._dict["MasterBoardData"]["digitalInputBits"]
         mask = 1 << nb
-        if  (output & mask):
+        if  output & mask:
             return 1
         else:
             return 0
