@@ -3,7 +3,6 @@ Python library to control an UR robot through its TCP/IP interface
 DOC LINK
 http://support.universal-robots.com/URRobot/RemoteAccess
 """
-from __future__ import absolute_import # necessary for import tricks to work with python2
 
 __author__ = "Olivier Roulet-Dubonnet"
 __copyright__ = "Copyright 2011-2015, Sintef Raufoss Manufacturing"
@@ -62,13 +61,23 @@ class URRobot(object):
     def __str__(self):
         return self.__repr__()
 
-    def is_running(self): # legacy
+    def is_running(self): 
         return self.secmon.running
 
     def is_program_running(self):
+        """
+        check if program is running.
+        After sending a program it might take several 10th of
+        a second before the robot enters the running state
+        """
         return self.secmon.is_program_running()
 
     def send_program(self, prog):
+        """
+        send a complete program using urscript to the robot
+        the program is executed immediatly and any runnning
+        program is interrupted
+        """
         self.logger.info("Sending program: " + prog)
         self.secmon.send_program(prog)
 
@@ -179,7 +188,7 @@ class URRobot(object):
         prog = "set_tool_voltage(%s)" % (val) 
         self.send_program(prog)
 
-    def wait_for_move(self, radius=0, Target=None):
+    def wait_for_move(self, radius=0, target=None):
         """
         wait until a move is completed
         radius and target args are ignored
@@ -351,6 +360,9 @@ class URRobot(object):
         self.stopj()
 
     def cleanup(self):
+        """
+        close connection to robot and stop internal thread
+        """
         self.logger.info("Closing sockets to robot")
         self.secmon.cleanup()
         if self.rtmon:
@@ -358,6 +370,10 @@ class URRobot(object):
     shutdown = cleanup #this might be wrong since we could also shutdown the robot hardware from this script
 
     def set_freedrive(self, val):
+        """
+        set robot in freedrive/brackdrive mode where an operator can jogg 
+        the robot to wished pose
+        """
         if val:
             self.send_program("set robotmode freedrive")
         else:
@@ -399,6 +415,9 @@ class Robot(URRobot):
         self.set_csys("Robot", m3d.Transform()) #identity
 
     def set_tcp(self, tcp):
+        """
+        set robot flange to tool tip transformation
+        """
         if type(tcp) == m3d.Transform:
             tcp = tcp.pose_vector
         URRobot.set_tcp(self, tcp)
@@ -419,6 +438,10 @@ class Robot(URRobot):
         self.csys = self.csys_dict[name]
 
     def set_orientation(self, orient, acc=None, vel=None, radius=0, wait=True):
+        """
+        set tool orientation using a orientation matric from math3d
+        or a orientation vector
+        """
         if type(orient) is not m3d.Orientation:
             orient = m3d.Orientation(orient)
         trans = self.get_pose()
@@ -498,10 +521,16 @@ class Robot(URRobot):
         return trans
 
     def get_orientation(self, wait=False):
+        """
+        get tool orientation in base coordinate system
+        """
         trans = self.get_pose(wait)
         return trans.orient
 
     def get_pos(self, wait=False):
+        """
+        get tool tip pos(x, y, z) in base coordinate system
+        """
         trans = self.get_pose(wait)
         return trans.pos
 
