@@ -14,25 +14,26 @@ __license__ = "GPLv3"
 
 from threading import Thread, Condition, Lock
 import logging
-import struct 
+import struct
 import socket
 from copy import copy
 import time
 
 
-
 class ParsingException(Exception):
+
     def __init__(self, *args):
         Exception.__init__(self, *args)
+
 
 class TimeoutException(Exception):
+
     def __init__(self, *args):
         Exception.__init__(self, *args)
-
-
 
 
 class ParserUtils(object):
+
     def __init__(self):
         self.logger = logging.getLogger(__name__)
         self.is_v30 = False
@@ -42,13 +43,13 @@ class ParserUtils(object):
         parse a packet from the UR socket and return a dictionary with the data
         """
         allData = {}
-        #print "Total size ", len(data)
+        # print "Total size ", len(data)
         while data:
             psize, ptype, pdata, data = self.analyze_header(data)
-            #print "We got packet with size %i and type %s" % (psize, ptype)
+            # print "We got packet with size %i and type %s" % (psize, ptype)
             if ptype == 16:
                 allData["SecondaryClientData"] = self._get_data(pdata, "!iB", ("size", "type"))
-                data = (pdata + data)[5:] # This is the total size so we resend data to parser
+                data = (pdata + data)[5:]  # This is the total size so we resend data to parser
             elif ptype == 0:
                 # this parses RobotModeData for versions >=3.0 (i.e. 3.0)
                 if psize == 38:
@@ -68,14 +69,14 @@ class ParserUtils(object):
             elif ptype == 5:
                 allData["LaserPointer(OBSOLETE)"] = self._get_data(pdata, "iBddd", ("size", "type"))
             elif ptype == 3:
-                allData["MasterBoardData"] = self._get_data(pdata, "iBhhbbddbbddffffBBb", ("size", "type", "digitalInputBits", "digitalOutputBits", "analogInputRange0", "analogInputRange1", "analogInput0", "analogInput1", "analogInputDomain0", "analogInputDomain1", "analogOutput0", "analogOutput1", "masterBoardTemperature", "robotVoltage48V", "robotCurrent", "masterIOCurrent"))#, "masterSafetyState" ,"masterOnOffState", "euromap67InterfaceInstalled"   ))
+                allData["MasterBoardData"] = self._get_data(pdata, "iBhhbbddbbddffffBBb", ("size", "type", "digitalInputBits", "digitalOutputBits", "analogInputRange0", "analogInputRange1", "analogInput0", "analogInput1", "analogInputDomain0", "analogInputDomain1", "analogOutput0", "analogOutput1", "masterBoardTemperature", "robotVoltage48V", "robotCurrent", "masterIOCurrent"))  # , "masterSafetyState" ,"masterOnOffState", "euromap67InterfaceInstalled"   ))
             elif ptype == 2:
                 allData["ToolData"] = self._get_data(pdata, "iBbbddfBffB", ("size", "type", "analoginputRange2", "analoginputRange3", "analogInput2", "analogInput3", "toolVoltage48V", "toolOutputVoltage", "toolCurrent", "toolTemperature", "toolMode"))
 
-            #elif ptype == 8:
-                    #allData["varMessage"] = self._get_data(pdata, "!iBQbb iiBAcAc", ("size", "type", "timestamp", "source", "robotMessageType", "code", "argument", "titleSize", "messageTitle", "messageText"))
-            #elif ptype == 7:
-                    #allData["keyMessage"] = self._get_data(pdata, "!iBQbb iiBAcAc", ("size", "type", "timestamp", "source", "robotMessageType", "code", "argument", "titleSize", "messageTitle", "messageText"))
+            # elif ptype == 8:
+                #allData["varMessage"] = self._get_data(pdata, "!iBQbb iiBAcAc", ("size", "type", "timestamp", "source", "robotMessageType", "code", "argument", "titleSize", "messageTitle", "messageText"))
+            # elif ptype == 7:
+                #allData["keyMessage"] = self._get_data(pdata, "!iBQbb iiBAcAc", ("size", "type", "timestamp", "source", "robotMessageType", "code", "argument", "titleSize", "messageTitle", "messageText"))
 
             elif ptype == 20:
                 tmp = self._get_data(pdata, "!iB Qbb", ("size", "type", "timestamp", "source", "robotMessageType"))
@@ -110,7 +111,7 @@ class ParserUtils(object):
             names args are strings used to store values
         """
         tmpdata = copy(data)
-        fmt = fmt.strip() # space may confuse us
+        fmt = fmt.strip()  # space may confuse us
         d = dict()
         i = 0
         j = 0
@@ -118,32 +119,32 @@ class ParserUtils(object):
             f = fmt[j]
             if f in (" ", "!", ">", "<"):
                 j += 1
-            elif f == "A": #we got an array 
+            elif f == "A":  # we got an array
                 # first we need to find its size
-                if j == len(fmt) - 2: # we are last element, size is the rest of data in packet
+                if j == len(fmt) - 2:  # we are last element, size is the rest of data in packet
                     arraysize = len(tmpdata)
-                else: # size should be given in last element
-                    asn = names[i-1]
+                else:  # size should be given in last element
+                    asn = names[i - 1]
                     if not asn.endswith("Size"):
                         raise ParsingException("Error, array without size ! %s %s" % (asn, i))
                     else:
                         arraysize = d[asn]
                 d[names[i]] = tmpdata[0:arraysize]
-                #print "Array is ", names[i], d[names[i]]
+                # print "Array is ", names[i], d[names[i]]
                 tmpdata = tmpdata[arraysize:]
                 j += 2
                 i += 1
             else:
                 fmtsize = struct.calcsize(fmt[j])
-                #print "reading ", f , i, j,  fmtsize, len(tmpdata)
-                if len(tmpdata) < fmtsize: #seems to happen on windows
+                # print "reading ", f , i, j,  fmtsize, len(tmpdata)
+                if len(tmpdata) < fmtsize:  # seems to happen on windows
                     raise ParsingException("Error, length of data smaller than advertized: ", len(tmpdata), fmtsize, "for names ", names, f, i, j)
                 d[names[i]] = struct.unpack("!" + f, tmpdata[0:fmtsize])[0]
-                #print names[i], d[names[i]]
+                # print names[i], d[names[i]]
                 tmpdata = tmpdata[fmtsize:]
                 j += 1
                 i += 1
-        return d 
+        return d
 
     def get_header(self, data):
         return struct.unpack("!iB", data[0:5])
@@ -156,10 +157,10 @@ class ParserUtils(object):
             raise ParsingException("Packet size %s smaller than header size (5 bytes)" % len(data))
         else:
             psize, ptype = self.get_header(data)
-            if psize < 5: 
+            if psize < 5:
                 raise ParsingException("Error, declared length of data smaller than its own header(5): ", psize)
             elif psize > len(data):
-                raise ParsingException("Error, length of data smaller (%s) than declared (%s)" %(len(data), psize))
+                raise ParsingException("Error, length of data smaller (%s) than declared (%s)" % (len(data), psize))
         return psize, ptype, data[:psize], data[psize:]
 
     def find_first_packet(self, data):
@@ -183,7 +184,7 @@ class ParserUtils(object):
                     self.logger.debug("Got packet with size %s and type %s", psize, ptype)
                     if counter:
                         self.logger.info("Remove {0} bytes of garbage at begining of packet".format(counter))
-                    #ok we we have somehting which looks like a packet"
+                    # ok we we have somehting which looks like a packet"
                     return (data[:psize], data[psize:])
                 else:
                     #packet is not complete
@@ -194,11 +195,12 @@ class ParserUtils(object):
                 return None
 
 
-
 class SecondaryMonitor(Thread):
+
     """
     Monitor data from secondary port and send programs to robot
     """
+
     def __init__(self, host):
         Thread.__init__(self)
         self.logger = logging.getLogger(self.__class__.__name__)
@@ -211,32 +213,31 @@ class SecondaryMonitor(Thread):
         self._prog_queue = []
         self._prog_queue_lock = Lock()
         self._dataqueue = bytes()
-        self._trystop = False # to stop thread
-        self.running = False #True when robot is on and listening
+        self._trystop = False  # to stop thread
+        self.running = False  # True when robot is on and listening
         self._dataEvent = Condition()
         self.lastpacket_timestamp = 0
 
         self.start()
-        self.wait()# make sure we got some data before someone calls us
+        self.wait()  # make sure we got some data before someone calls us
 
     def send_program(self, prog):
         """
         send program to robot in URRobot format
-        If another program is send while a program is running the first program is aborded. 
+        If another program is send while a program is running the first program is aborded.
         """
         prog.strip()
         self.logger.debug("Sending program: " + prog)
-        if type(prog) != bytes:
+        if not isinstance(prog, bytes):
             prog = prog.encode()
         with self._prog_queue_lock:
             self._prog_queue.append(prog + b"\n")
- 
 
     def run(self):
         """
-        check program execution status in the secondary client data packet we get from the robot 
+        check program execution status in the secondary client data packet we get from the robot
         This interface uses only data from the secondary client interface (see UR doc)
-        Only the last connected client is the primary client, 
+        Only the last connected client is the primary client,
         so this is not guaranted and we cannot rely on information to the primary client.
         """
 
@@ -245,12 +246,12 @@ class SecondaryMonitor(Thread):
                 if len(self._prog_queue) > 0:
                     prog = self._prog_queue.pop(0)
                     self._s_secondary.send(prog)
-            
+
             data = self._get_data()
             try:
                 tmpdict = self._parser.parse(data)
                 with self._dictLock:
-                    self._dict = tmpdict 
+                    self._dict = tmpdict
             except ParsingException as ex:
                 self.logger.warn("Error parsing one packet from urrobot: " + str(ex))
                 continue
@@ -259,26 +260,26 @@ class SecondaryMonitor(Thread):
                 self.logger.warn("Got a packet from robot without RobotModeData, strange ...")
                 continue
 
-            self.lastpacket_timestamp = time.time() 
-            
+            self.lastpacket_timestamp = time.time()
+
             if self._parser.is_v30:
                 if self._dict["RobotModeData"]["robotMode"] == 7 \
-                            and self._dict["RobotModeData"]["isRealRobotEnabled"] == True \
-                            and self._dict["RobotModeData"]["isEmergencyStopped"] == False \
-                            and self._dict["RobotModeData"]["isSecurityStopped"] == False \
-                            and self._dict["RobotModeData"]["isRobotConnected"] == True \
-                            and self._dict["RobotModeData"]["isPowerOnRobot"] == True:
+                        and self._dict["RobotModeData"]["isRealRobotEnabled"] == True \
+                        and self._dict["RobotModeData"]["isEmergencyStopped"] == False \
+                        and self._dict["RobotModeData"]["isSecurityStopped"] == False \
+                        and self._dict["RobotModeData"]["isRobotConnected"] == True \
+                        and self._dict["RobotModeData"]["isPowerOnRobot"] == True:
                     self.running = True
             else:
                 if self._dict["RobotModeData"]["robotMode"] == 0 \
-                            and self._dict["RobotModeData"]["isRealRobotEnabled"] == True \
-                            and self._dict["RobotModeData"]["isEmergencyStopped"] == False \
-                            and self._dict["RobotModeData"]["isSecurityStopped"] == False \
-                            and self._dict["RobotModeData"]["isRobotConnected"] == True \
-                            and self._dict["RobotModeData"]["isPowerOnRobot"] == True:
+                        and self._dict["RobotModeData"]["isRealRobotEnabled"] == True \
+                        and self._dict["RobotModeData"]["isEmergencyStopped"] == False \
+                        and self._dict["RobotModeData"]["isSecurityStopped"] == False \
+                        and self._dict["RobotModeData"]["isRobotConnected"] == True \
+                        and self._dict["RobotModeData"]["isPowerOnRobot"] == True:
                     self.running = True
                 else:
-                    if self.running == True:
+                    if self.running:
                         self.logger.error("Robot not running: " + str(self._dict["RobotModeData"]))
                     self.running = False
                 with self._dataEvent:
@@ -344,7 +345,7 @@ class SecondaryMonitor(Thread):
         with self._dictLock:
             output = self._dict["MasterBoardData"]["digitalOutputBits"]
         mask = 1 << nb
-        if  output & mask:
+        if output & mask:
             return 1
         else:
             return 0
@@ -355,7 +356,7 @@ class SecondaryMonitor(Thread):
         with self._dictLock:
             output = self._dict["MasterBoardData"]["digitalInputBits"]
         mask = 1 << nb
-        if  output & mask:
+        if output & mask:
             return 1
         else:
             return 0
@@ -388,16 +389,11 @@ class SecondaryMonitor(Thread):
         with self._dictLock:
             return self._dict["RobotModeData"]["isProgramRunning"]
 
-
     def cleanup(self):
         self._trystop = True
         self.join()
-        #with self._dataEvent: #wake up any thread that may be waiting for data before we close. Should we do that?
-            #self._dataEvent.notifyAll()
+        # with self._dataEvent: #wake up any thread that may be waiting for data before we close. Should we do that?
+        # self._dataEvent.notifyAll()
         if self._s_secondary:
             with self._prog_queue_lock:
                 self._s_secondary.close()
-
-
-
-

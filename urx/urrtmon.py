@@ -11,10 +11,9 @@ __credits__ = ["Morten Lind, Olivier Roulet-Dubonnet"]
 __license__ = "GPLv3"
 
 
-
 import logging
 import socket
-import struct 
+import struct
 import time
 import threading
 from copy import deepcopy
@@ -23,19 +22,20 @@ import numpy as np
 
 import math3d as m3d
 
+
 class URRTMonitor(threading.Thread):
 
-    ## Struct for revision of the UR controller giving 692 bytes
+    # Struct for revision of the UR controller giving 692 bytes
     rtstruct692 = struct.Struct('>d6d6d6d6d6d6d6d6d18d6d6d6dQ')
-    
-    ## for revision of the UR controller giving 540 byte. Here TCP
-    ## pose is not included!
+
+    # for revision of the UR controller giving 540 byte. Here TCP
+    # pose is not included!
     rtstruct540 = struct.Struct('>d6d6d6d6d6d6d6d6d18d')
 
     def __init__(self, urHost, loglevel=logging.WARNING):
         threading.Thread.__init__(self)
         self.logger = logging.getLogger(self.__class__.__name__)
-        if len(logging.root.handlers) == 0: #dirty hack
+        if len(logging.root.handlers) == 0:  # dirty hack
             logging.basicConfig()
         self.logger.setLevel(loglevel)
         self.daemon = True
@@ -45,13 +45,13 @@ class URRTMonitor(threading.Thread):
         self._rtSock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self._rtSock.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
         self._urHost = urHost
-        ## Package data variables
+        # Package data variables
         self._timestamp = None
         self._ctrlTimestamp = None
         self._qActual = None
         self._qTarget = None
         self._tcp = None
-        self._tcp_force = None 
+        self._tcp_force = None
         self.__recvTime = 0
         self._last_ctrl_ts = 0
         #self._last_ts = 0
@@ -68,13 +68,13 @@ class URRTMonitor(threading.Thread):
     def __recv_bytes(self, nBytes):
         ''' Facility method for receiving exactly "nBytes" bytes from
         the robot connector socket.'''
-        ## Record the time of arrival of the first of the stream block
+        # Record the time of arrival of the first of the stream block
         recvTime = 0
         pkg = b''
         while len(pkg) < nBytes:
             pkg += self._rtSock.recv(nBytes - len(pkg))
             if recvTime == 0:
-                recvTime  = time.time()
+                recvTime = time.time()
         self.__recvTime = recvTime
         return pkg
 
@@ -92,7 +92,7 @@ class URRTMonitor(threading.Thread):
             else:
                 return self._qActual
     getActual = q_actual
-    
+
     def q_target(self, wait=False, timestamp=False):
         """ Get the target joint position vector."""
         if wait:
@@ -103,7 +103,7 @@ class URRTMonitor(threading.Thread):
             else:
                 return self._qTarget
     getTarget = q_target
-    
+
     def tcf_pose(self, wait=False, timestamp=False, ctrlTimestamp=False):
         """ Return the tool pose values."""
         if wait:
@@ -137,28 +137,37 @@ class URRTMonitor(threading.Thread):
 
     def __recv_rt_data(self):
         head = self.__recv_bytes(4)
-        ## Record the timestamp for this logical package
+        # Record the timestamp for this logical package
         timestamp = self.__recvTime
         pkgsize = struct.unpack('>i', head)[0]
-        self.logger.debug('Received header telling that package is %d bytes long'%pkgsize)
-        payload = self.__recv_bytes(pkgsize-4)
+        self.logger.debug(
+            'Received header telling that package is %d bytes long' %
+            pkgsize)
+        payload = self.__recv_bytes(pkgsize - 4)
         if pkgsize >= 692:
             unp = self.rtstruct692.unpack(payload[:self.rtstruct692.size])
         elif pkgsize >= 540:
             unp = self.rtstruct540.unpack(payload[:self.rtstruct540.size])
         else:
-            self.logger.warning('Error, Received packet of length smaller than 540: ', pkgsize)
+            self.logger.warning(
+                'Error, Received packet of length smaller than 540: ',
+                pkgsize)
             return
 
         with self._dataAccess:
             self._timestamp = timestamp
             # it seems that packet often arrives packed as two... maybe TCP_NODELAY is not set on UR controller??
-            #if (self._timestamp - self._last_ts) > 0.010:
-                #self.logger.warning("Error the we did not receive a packet for {}s ".format( self._timestamp - self._last_ts))
+            # if (self._timestamp - self._last_ts) > 0.010:
+            #self.logger.warning("Error the we did not receive a packet for {}s ".format( self._timestamp - self._last_ts))
             #self._last_ts = self._timestamp
-            self._ctrlTimestamp = np.array(unp[0]) 
-            if self._last_ctrl_ts != 0 and (self._ctrlTimestamp - self._last_ctrl_ts) > 0.010:
-                self.logger.warning("Error the controller failed to send us a packet: time since last packet {}s ".format( self._ctrlTimestamp - self._last_ctrl_ts))
+            self._ctrlTimestamp = np.array(unp[0])
+            if self._last_ctrl_ts != 0 and (
+                    self._ctrlTimestamp -
+                    self._last_ctrl_ts) > 0.010:
+                self.logger.warning(
+                    "Error the controller failed to send us a packet: time since last packet {}s ".format(
+                        self._ctrlTimestamp -
+                        self._last_ctrl_ts))
             self._last_ctrl_ts = self._ctrlTimestamp
             self._qActual = np.array(unp[31:37])
             self._qTarget = np.array(unp[1:7])
@@ -167,11 +176,16 @@ class URRTMonitor(threading.Thread):
 
             if self._csys:
                 with self._csys_lock:
-                    tcp = self._csys * m3d.Transform(self._tcp)#might be a godd idea to remove dependancy on m3d
+                    # might be a godd idea to remove dependancy on m3d
+                    tcp = self._csys * m3d.Transform(self._tcp)
                 self._tcp = tcp.pose_vector
         if self._buffering:
             with self._buffer_lock:
-                self._buffer.append((self._timestamp, self._ctrlTimestamp, self._tcp, self._qActual))#FIXME use named arrays of allow to configure what data to buffer
+                self._buffer.append(
+                    (self._timestamp,
+                     self._ctrlTimestamp,
+                     self._tcp,
+                     self._qActual))  # FIXME use named arrays of allow to configure what data to buffer
 
         with self._dataEvent:
             self._dataEvent.notifyAll()
@@ -206,7 +220,6 @@ class URRTMonitor(threading.Thread):
                     return self._buffer.pop(0)
             time.sleep(0.001)
 
-
     def get_buffer(self):
         """
         return a copy of the entire buffer
@@ -221,7 +234,13 @@ class URRTMonitor(threading.Thread):
         if wait:
             self.wait()
         with self._dataAccess:
-            return dict(timestamp=self._timestamp, ctrltimestamp=self._ctrlTimestamp, qActual=self._qActual, qTarget=self._qTarget, tcp=self._tcp, tcp_force=self._tcp_force)
+            return dict(
+                timestamp=self._timestamp,
+                ctrltimestamp=self._ctrlTimestamp,
+                qActual=self._qActual,
+                qTarget=self._qTarget,
+                tcp=self._tcp,
+                tcp_force=self._tcp_force)
 
     def stop(self):
         #print(self.__class__.__name__+': Stopping')
@@ -239,20 +258,26 @@ class URRTMonitor(threading.Thread):
         self._rtSock.close()
 
 
-
-
 def startupInteractive():
     from optparse import OptionParser
     from IPython import embed
-    ## Require the urhost arg.
+    # Require the urhost arg.
     parser = OptionParser()
-    parser.add_option('--debug', action='store_true', default=False, dest='debug')
-    parser.add_option('--start', action='store_true', default=False, dest='start')
+    parser.add_option(
+        '--debug',
+        action='store_true',
+        default=False,
+        dest='debug')
+    parser.add_option(
+        '--start',
+        action='store_true',
+        default=False,
+        dest='start')
     opts, args = parser.parse_args()
     if len(args) != 1:
         raise Exception('Must have argument with ur-host name or ip!')
     urHost = args[0]
-    print('Connecting to UR real-time socket inteface on "%s"'%urHost)
+    print('Connecting to UR real-time socket inteface on "%s"' % urHost)
     # # Start the connectors
     urRTMon = URRTMonitor(urHost, debug=opts.debug)
     # # Register for hard shutdown

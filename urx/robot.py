@@ -19,7 +19,7 @@ except ImportError:
     MATH3D = False
     print("python-math3d library could not be found on this computer, disabling use of matrices and path blending")
 
-from urx import urrtmon 
+from urx import urrtmon
 from urx import ursecmon
 
 
@@ -28,6 +28,7 @@ class RobotException(Exception):
 
 
 class URRobot(object):
+
     """
     Python interface to socket interface of UR robot.
     programs are send to port 3002
@@ -36,24 +37,24 @@ class URRobot(object):
     The RT interfaces is only used for the get_force related methods
     Rmq: A program sent to the robot i executed immendiatly and any running program is stopped
     """
+
     def __init__(self, host, useRTInterface=False):
         self.logger = logging.getLogger(self.__class__.__name__)
         self.host = host
-        self.csys = None 
-        
+        self.csys = None
+
         self.logger.info("Opening secondary monitor socket")
-        self.secmon = ursecmon.SecondaryMonitor(self.host) #data from robot at 10Hz
-       
+        self.secmon = ursecmon.SecondaryMonitor(self.host)  # data from robot at 10Hz
+
         self.rtmon = None
         if useRTInterface:
             self.rtmon = self.get_realtime_monitor()
-        #the next 3 values must be conservative! otherwise we may wait forever
-        self.joinEpsilon = 0.01 # precision of joint movem used to wait for move completion
+        # the next 3 values must be conservative! otherwise we may wait forever
+        self.joinEpsilon = 0.01  # precision of joint movem used to wait for move completion
         # It seems URScript is  limited in the character length of floats it accepts
-        self.max_float_length = 6 # FIXME: check max length!!!
+        self.max_float_length = 6  # FIXME: check max length!!!
 
-        self.secmon.wait() # make sure we get data from robot before letting clients access our methods
-        
+        self.secmon.wait()  # make sure we get data from robot before letting clients access our methods
 
     def __repr__(self):
         return "Robot Object (IP=%s, state=%s)" % (self.host, self.secmon.get_all_data()["RobotModeData"])
@@ -61,7 +62,7 @@ class URRobot(object):
     def __str__(self):
         return self.__repr__()
 
-    def is_running(self): 
+    def is_running(self):
         return self.secmon.running
 
     def is_program_running(self):
@@ -117,21 +118,21 @@ class URRobot(object):
             cog.insert(0, weight)
             prog = "set_payload({}, ({},{},{}))".format(*cog)
         else:
-            prog = "set_payload(%s)" % weight 
+            prog = "set_payload(%s)" % weight
         self.send_program(prog)
 
     def set_gravity(self, vector):
         """
         set direction of gravity
         """
-        prog = "set_gravity(%s)" % list(vector) 
+        prog = "set_gravity(%s)" % list(vector)
         self.send_program(prog)
 
     def send_message(self, msg):
         """
         send message to the GUI log tab on the robot controller
         """
-        prog = "textmsg(%s)" % msg 
+        prog = "textmsg(%s)" % msg
         self.send_program(prog)
 
     def set_digital_out(self, output, val):
@@ -146,13 +147,13 @@ class URRobot(object):
 
     def get_analog_inputs(self):
         """
-        get analog input 
+        get analog input
         """
         return self.secmon.get_analog_inputs()
 
     def get_analog_in(self, nb, wait=False):
         """
-        get analog input 
+        get analog input
         """
         return self.secmon.get_analog_in(nb, wait=wait)
 
@@ -178,14 +179,14 @@ class URRobot(object):
         """
         set analog output, val is a float
         """
-        prog = "set_analog_output(%s, %s)" % (output, val) 
+        prog = "set_analog_output(%s, %s)" % (output, val)
         self.send_program(prog)
 
     def set_tool_voltage(self, val):
         """
         set voltage to be delivered to the tool, val is 0, 12 or 24
         """
-        prog = "set_tool_voltage(%s)" % (val) 
+        prog = "set_tool_voltage(%s)" % (val)
         self.send_program(prog)
 
     def wait_for_move(self, radius=0, target=None):
@@ -194,7 +195,7 @@ class URRobot(object):
         radius and target args are ignored
         """
         self.logger.debug("Waiting for move completion")
-        # it is necessary to wait since robot may takes a while to get into running state, 
+        # it is necessary to wait since robot may takes a while to get into running state,
         for _ in range(3):
             self.secmon.wait()
         while True:
@@ -203,9 +204,9 @@ class URRobot(object):
             jts = self.secmon.get_joint_data(wait=True)
             finished = True
             for i in range(0, 6):
-                #Rmq: q_target is an interpolated target we have no control over
-                if abs(jts["q_actual%s"%i] - jts["q_target%s"%i]) > self.joinEpsilon:
-                    self.logger.debug("Waiting for end move, q_actual is %s, q_target is %s, diff is %s, epsilon is %s", jts["q_actual%s"%i], jts["q_target%s"%i], jts["q_actual%s"%i] - jts["q_target%s"%i], self.joinEpsilon)
+                # Rmq: q_target is an interpolated target we have no control over
+                if abs(jts["q_actual%s" % i] - jts["q_target%s" % i]) > self.joinEpsilon:
+                    self.logger.debug("Waiting for end move, q_actual is %s, q_target is %s, diff is %s, epsilon is %s", jts["q_actual%s" % i], jts["q_target%s" % i], jts["q_actual%s" % i] - jts["q_target%s" % i], self.joinEpsilon)
                     finished = False
                     break
             if finished and not self.secmon.is_program_running():
@@ -246,7 +247,7 @@ class URRobot(object):
         if relative:
             l = self.getj()
             joints = [v + l[i] for i, v in enumerate(joints)]
-        joints = [round(j, self.max_float_length) for j in joints] 
+        joints = [round(j, self.max_float_length) for j in joints]
         joints.append(acc)
         joints.append(vel)
         joints.append(radius)
@@ -260,7 +261,7 @@ class URRobot(object):
 
     def movel(self, tpose, acc=0.01, vel=0.01, radius=0, wait=True, relative=False):
         """
-        linear move 
+        linear move
         """
         if relative:
             l = self.getl()
@@ -328,7 +329,7 @@ class URRobot(object):
     def movels(self, pose_list, acc=0.01, vel=0.01, radius=0.01, wait=True):
         """
         Concatenate several movel commands and applies a blending radius
-        pose_list is a list of pose. 
+        pose_list is a list of pose.
         """
         header = "def myProg():\n"
         end = "end\n"
@@ -337,7 +338,7 @@ class URRobot(object):
         for idx, pose in enumerate(pose_list):
             pose.append(acc)
             pose.append(vel)
-            if idx != (len(pose_list) -1):
+            if idx != (len(pose_list) - 1):
                 pose.append(radius)
             else:
                 pose.append(0)
@@ -367,11 +368,11 @@ class URRobot(object):
         self.secmon.cleanup()
         if self.rtmon:
             self.rtmon.stop()
-    shutdown = cleanup #this might be wrong since we could also shutdown the robot hardware from this script
+    shutdown = cleanup  # this might be wrong since we could also shutdown the robot hardware from this script
 
     def set_freedrive(self, val):
         """
-        set robot in freedrive/brackdrive mode where an operator can jogg 
+        set robot in freedrive/brackdrive mode where an operator can jogg
         the robot to wished pose
         """
         if val:
@@ -392,33 +393,33 @@ class URRobot(object):
         """
         if not self.rtmon:
             self.logger.info("Opening real-time monitor socket")
-            self.rtmon = urrtmon.URRTMonitor(self.host)# som information is only available on rt interface
+            self.rtmon = urrtmon.URRTMonitor(self.host)  # som information is only available on rt interface
             self.rtmon.start()
-        self.rtmon.set_csys(self.csys) 
+        self.rtmon.set_csys(self.csys)
         return self.rtmon
 
 
-
-
 class Robot(URRobot):
+
     """
     Generic Python interface to an industrial robot.
     Compared to the URRobot class, this class adds the possibilty to work directly with matrices
     and includes support for calibrating the robot coordinate system
     """
+
     def __init__(self, host, useRTInterface=False):
         URRobot.__init__(self, host, useRTInterface)
         self.default_linear_acceleration = 0.01
         self.default_linear_velocity = 0.01
         self.csys_dict = {}
         self.csys = None
-        self.set_csys("Robot", m3d.Transform()) #identity
+        self.set_csys("Robot", m3d.Transform())  # identity
 
     def set_tcp(self, tcp):
         """
         set robot flange to tool tip transformation
         """
-        if type(tcp) == m3d.Transform:
+        if isinstance(tcp, m3d.Transform):
             tcp = tcp.pose_vector
         URRobot.set_tcp(self, tcp)
 
@@ -442,7 +443,7 @@ class Robot(URRobot):
         set tool orientation using a orientation matric from math3d
         or a orientation vector
         """
-        if type(orient) is not m3d.Orientation:
+        if not isinstance(orient, m3d.Orientation):
             orient = m3d.Orientation(orient)
         trans = self.get_pose()
         trans.orient = orient
@@ -453,7 +454,7 @@ class Robot(URRobot):
         move tool in base coordinate, keeping orientation
         """
         t = m3d.Transform()
-        if not type(vect) is m3d.Vector:
+        if not isinstance(vect, m3d.Vector):
             vect = m3d.Vector(vect)
         t.pos += m3d.Vector(vect)
         return self.add_pose_base(t, acc, vel, radius, wait=wait)
@@ -463,7 +464,7 @@ class Robot(URRobot):
         move tool in tool coordinate, keeping orientation
         """
         t = m3d.Transform()
-        if not type(vect) is m3d.Vector:
+        if not isinstance(vect, m3d.Vector):
             vect = m3d.Vector(vect)
         t.pos += vect
         return self.add_pose_tool(t, acc, vel, radius, wait=wait)
@@ -472,7 +473,7 @@ class Robot(URRobot):
         """
         set tool to given pos, keeping constant orientation
         """
-        if not type(vect) is m3d.Vector:
+        if not isinstance(vect, m3d.Vector):
             vect = m3d.Vector(vect)
         trans = m3d.Transform(self.get_orientation(), m3d.Vector(vect))
         return self.set_pose(trans, acc, vel, radius, wait=wait)
@@ -482,21 +483,20 @@ class Robot(URRobot):
         move tcp to point and orientation defined by a transformation
         if process is True, movep is used instead of movel
         if radius is not 0 and wait is True, the method will return when tcp
-        is radius close to the target. It is then possible to send another command 
+        is radius close to the target. It is then possible to send another command
         and the controller will blend the path. Blending only works with process(movep). (BROKEN!)
         """
-        if not acc: 
+        if not acc:
             acc = self.default_linear_acceleration
-        if not vel: 
+        if not vel:
             vel = self.default_linear_velocity
         t = self.csys * trans
         if process:
             pose = URRobot.movep(self, t.pose_vector, acc=acc, vel=vel, wait=wait, radius=radius)
         else:
             pose = URRobot.movel(self, t.pose_vector, acc=acc, vel=vel, wait=wait, radius=radius)
-        if pose != None: #movel does not return anything when wait is False
+        if pose is not None:  # movel does not return anything when wait is False
             return self.csys.inverse * m3d.Transform(pose)
-
 
     def add_pose_base(self, trans, acc=None, vel=None, radius=0, wait=True, process=False):
         """
@@ -517,7 +517,7 @@ class Robot(URRobot):
         get current transform from base to to tcp
         """
         pose = URRobot.getl(self, wait)
-        trans = self.csys.inverse * m3d.Transform(pose) 
+        trans = self.csys.inverse * m3d.Transform(pose)
         return trans
 
     def get_orientation(self, wait=False):
@@ -565,7 +565,7 @@ class Robot(URRobot):
     def movels(self, pose_list, acc=0.01, vel=0.01, radius=0.01, wait=True):
         """
         Concatenate several movep commands and applies a blending radius
-        pose_list is a list of pose. 
+        pose_list is a list of pose.
         """
         new_poses = []
         for pose in pose_list:
@@ -606,7 +606,7 @@ class Robot(URRobot):
         return t.pose_vector.tolist()
 
     def set_gravity(self, vector):
-        if type(vector) == m3d.Vector:
+        if isinstance(vector, m3d.Vector):
             vector = vector.list
         return URRobot.set_gravity(self, vector)
 
@@ -616,7 +616,7 @@ class Robot(URRobot):
         if radius is not 0, returns when tcp is radius closed to target(using mathd3d dist method)
         """
         self.logger.debug("Waiting for move completion")
-        # it is necessary to wait since robot may takes a while to get into running state, 
+        # it is necessary to wait since robot may takes a while to get into running state,
         for _ in range(3):
             self.secmon.wait()
         target = m3d.Transform(target)
@@ -631,12 +631,5 @@ class Robot(URRobot):
                 return
 
 
-
-
-
 if not MATH3D:
-    Robot = URRobot 
-
-
-
-
+    Robot = URRobot
