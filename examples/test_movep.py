@@ -36,5 +36,5 @@ if __name__ == "__main__":
         rob.movep(pose, acc=a, vel=v, radius=0, wait=True)
 
     finally:
-        rob.cleanup()
+        rob.close()
 

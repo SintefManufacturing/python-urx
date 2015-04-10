@@ -99,7 +99,7 @@ class ParserUtils(object):
                 else:
                     self.logger.debug("Message type parser not implemented %s", tmp)
             else:
-                self.logger.debug("Unknown packet type %s with size %s" % (ptype, psize))
+                self.logger.debug("Unknown packet type %s with size %s", ptype, psize)
 
         return allData
 
@@ -178,12 +178,12 @@ class ParserUtils(object):
                     counter += 1
                     if counter > limit:
                         self.logger.warn("tried %s times to find a packet in data, advertised packet size: %s, type: %s", counter, psize, ptype)
-                        self.logger.warn("Data length: {}".format(len(data)))
+                        self.logger.warn("Data length: %s", len(data))
                         limit = limit * 10
                 elif len(data) >= psize:
                     self.logger.debug("Got packet with size %s and type %s", psize, ptype)
                     if counter:
-                        self.logger.info("Remove {0} bytes of garbage at begining of packet".format(counter))
+                        self.logger.info("Remove %s bytes of garbage at begining of packet", counter)
                     # ok we we have somehting which looks like a packet"
                     return (data[:psize], data[psize:])
                 else:
@@ -389,7 +389,7 @@ class SecondaryMonitor(Thread):
         with self._dictLock:
             return self._dict["RobotModeData"]["isProgramRunning"]
 
-    def cleanup(self):
+    def close(self):
         self._trystop = True
         self.join()
         # with self._dataEvent: #wake up any thread that may be waiting for data before we close. Should we do that?

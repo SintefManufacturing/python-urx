@@ -32,12 +32,9 @@ class URRTMonitor(threading.Thread):
     # pose is not included!
     rtstruct540 = struct.Struct('>d6d6d6d6d6d6d6d6d18d')
 
-    def __init__(self, urHost, loglevel=logging.WARNING):
+    def __init__(self, urHost):
         threading.Thread.__init__(self)
         self.logger = logging.getLogger(self.__class__.__name__)
-        if len(logging.root.handlers) == 0:  # dirty hack
-            logging.basicConfig()
-        self.logger.setLevel(loglevel)
         self.daemon = True
         self._stop_event = True
         self._dataEvent = threading.Condition()
@@ -141,7 +138,7 @@ class URRTMonitor(threading.Thread):
         timestamp = self.__recvTime
         pkgsize = struct.unpack('>i', head)[0]
         self.logger.debug(
-            'Received header telling that package is %d bytes long' %
+            'Received header telling that package is %s bytes long', 
             pkgsize)
         payload = self.__recv_bytes(pkgsize - 4)
         if pkgsize >= 692:
@@ -150,7 +147,7 @@ class URRTMonitor(threading.Thread):
             unp = self.rtstruct540.unpack(payload[:self.rtstruct540.size])
         else:
             self.logger.warning(
-                'Error, Received packet of length smaller than 540: ',
+                'Error, Received packet of length smaller than 540: %s ',
                 pkgsize)
             return
 
@@ -165,9 +162,8 @@ class URRTMonitor(threading.Thread):
                     self._ctrlTimestamp -
                     self._last_ctrl_ts) > 0.010:
                 self.logger.warning(
-                    "Error the controller failed to send us a packet: time since last packet {}s ".format(
-                        self._ctrlTimestamp -
-                        self._last_ctrl_ts))
+                    "Error the controller failed to send us a packet: time since last packet %s s ", 
+                    self._ctrlTimestamp - self._last_ctrl_ts)
             self._last_ctrl_ts = self._ctrlTimestamp
             self._qActual = np.array(unp[31:37])
             self._qTarget = np.array(unp[1:7])
@@ -246,7 +242,7 @@ class URRTMonitor(threading.Thread):
         #print(self.__class__.__name__+': Stopping')
         self._stop_event = True
 
-    def cleanup(self):
+    def close(self):
         self.stop()
         self.join()
 
@@ -258,35 +254,3 @@ class URRTMonitor(threading.Thread):
         self._rtSock.close()
 
 
-def startupInteractive():
-    from optparse import OptionParser
-    from IPython import embed
-    # Require the urhost arg.
-    parser = OptionParser()
-    parser.add_option(
-        '--debug',
-        action='store_true',
-        default=False,
-        dest='debug')
-    parser.add_option(
-        '--start',
-        action='store_true',
-        default=False,
-        dest='start')
-    opts, args = parser.parse_args()
-    if len(args) != 1:
-        raise Exception('Must have argument with ur-host name or ip!')
-    urHost = args[0]
-    print('Connecting to UR real-time socket inteface on "%s"' % urHost)
-    # # Start the connectors
-    urRTMon = URRTMonitor(urHost, debug=opts.debug)
-    # # Register for hard shutdown
-    try:
-        if opts.start:
-            urRTMon.start()
-        embed()
-    finally:
-        urRTMon.stop()
-
-if __name__ == '__main__':
-    startupInteractive()

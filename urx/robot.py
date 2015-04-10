@@ -360,15 +360,14 @@ class URRobot(object):
     def stop(self):
         self.stopj()
 
-    def cleanup(self):
+    def close(self):
         """
         close connection to robot and stop internal thread
         """
         self.logger.info("Closing sockets to robot")
-        self.secmon.cleanup()
+        self.secmon.close()
         if self.rtmon:
             self.rtmon.stop()
-    shutdown = cleanup  # this might be wrong since we could also shutdown the robot hardware from this script
 
     def set_freedrive(self, val):
         """

@@ -23,7 +23,7 @@ if __name__ == "__main__":
     else:
         do_wait = True
 
-    rob = urx.Robot("192.168.1.6", logLevel=logging.INFO)
+    rob = urx.Robot("192.168.1.6")
     rob.set_tcp((0, 0, 0, 0, 0, 0))
     rob.set_payload(0.5, (0, 0, 0))
     try:
@@ -99,5 +99,5 @@ if __name__ == "__main__":
 
 
     finally:
-        rob.cleanup()
+        rob.close()
 

@@ -114,7 +114,7 @@ class Service(object):
 
             time.sleep(0.12)#URX secondday port accepts command at 10Hz, no need to go faster
 
-    def cleanup(self):
+    def close(self):
         if self.joystick:
             self.joystick.quit()
 
@@ -135,5 +135,5 @@ if __name__ == "__main__":
     try:
         service.loop() 
     finally: 
-        robot.cleanup()
-        service.cleanup()
+        robot.close()
+        service.close()

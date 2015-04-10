@@ -13,10 +13,10 @@ if __name__ == "__main__":
     else:
         host = 'localhost'
     try:
-        robot = Robot( host )#, logLevel=logging.DEBUG, parserLogLevel=logging.DEBUG)
+        robot = Robot(host)
         r = robot
         embed()
     finally:
         if "robot" in dir():
-            robot.cleanup()
+            robot.close()
 

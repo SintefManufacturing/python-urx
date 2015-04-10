@@ -23,5 +23,5 @@ if __name__ == "__main__":
         rob.translate_tool((0, 0, -l), acc=a, vel=v)
         rob.translate_tool((0, 0, l), acc=a, vel=v)
     finally:
-        rob.cleanup()
+        rob.close()
 

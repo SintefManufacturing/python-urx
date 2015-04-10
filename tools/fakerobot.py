@@ -34,7 +34,7 @@ class Server(socketserver.ThreadingMixIn, socketserver.TCPServer):
         """
         self.handlers = []
 
-    def cleanup(self):
+    def close(self):
         for handler in self.handlers:
             handler.request.shutdown(socket.SHUT_RDWR)
             handler.request.close()
@@ -63,4 +63,4 @@ if __name__ == "__main__":
                 handler.request.sendall(packet)
     finally:
         print("Shutting down server")
-        server.cleanup()
+        server.close()

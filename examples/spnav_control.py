@@ -87,7 +87,7 @@ if __name__ == '__main__':
     try:
         service.loop()
     finally:
-        robot.cleanup()
+        robot.close()
         spnav.spnav_close()
 
 
