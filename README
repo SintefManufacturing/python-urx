@@ -1,20 +1,12 @@
-   This program is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
 
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
+urx is a python library to control a robot from 'Universal robot'. 
 
-    You should have received a copy of the GNU General Public License
-    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+It is meaned as an easy to use module for pick and place like programming,
+ although it has been used for welding and other application with rather low update rate.
 
-
-urx is a python library to control a robot from 'Universal robot'. It has currently been used with several versions of UR5.
 Both the 'secondary port' interface and the real-time/matlab interface of the UR controller are used. 
 urx can optionally use the python-math3d https://launchpad.net/pymath3d library to receive and send transformation matrices to the robot
+urx is known to work with all release robots from Universal Robot.
 
 urx was primarily developed by Olivier Roulet-Dubonnet for Sintef Raufoss Manufacturing and is published under the GPL license: 
 http://www.sintef.no/manufacturing/
@@ -31,12 +23,11 @@ rob.movel((x, y, z, rx, ry, rz), a, v)
 print "Current tool pose is: ",  rob.getl()
 rob.movel((0.1, 0, 0, 0, 0, 0), a, v, relative=true)# move relative to current pose
 rob.translate((0.1, 0, 0), a, v) #move tool and keep orientation
-rob.orient((0.1, 0, 0), a, v) #orient tool and keep tool tip position
 rob.stopj(a)
 
 robot.movel(x, y, z, rx, ry, rz), wait=False)
 while True :
-    sleep(0.1) #sleep first since the information may be outdated
+    sleep(0.1) #sleep first since the robot may not have processed the command yet
     if robot.is_program_running():
         break
 
@@ -52,24 +43,21 @@ try:
 except RobotError, ex:
     print "Robot could not execute move (emergency stop for example), do something", ex
 
-Using matrices:
+Development using Transform objects from math3d library:
 
 robot = Robot("192.168.1.1")
 robot.set_tcp((0,0,0.23,0,0,0)
-calib = mathd3d.Transform() 
-calib.orient.rotate_zb(pi/4) #just an example
-robot.add_csys("mycsys", calib) #set robot corrdinate system
-robot.set_default_csys("mycsys")
-trans = robot.get_transform() # get current transformation matrix (tool to base)
+robot.csys.orient.rotate_zb(pi/4) #just an example
+trans = robot.get_pose() # get current transformation matrix (tool to base)
 trans.orient.rotate_yt(pi/2)
-robot.apply_transform(trans)
+robot.set_pose(trans)
 trans.pos += math3d.Vector(0,0,0.3)
-robot.apply_transform(trans)
+robot.set_pose(trans)
 
 
 #or only work with orientation part
 o = robot.get_orientation()
 o.rotate_yb(pi)
-robot.orient(o)
+robot.set_orientation(o)
 
 
