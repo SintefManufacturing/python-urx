@@ -38,7 +38,7 @@ class URRobot(object):
     Rmq: A program sent to the robot i executed immendiatly and any running program is stopped
     """
 
-    def __init__(self, host, useRTInterface=False):
+    def __init__(self, host, use_rt=False):
         self.logger = logging.getLogger(self.__class__.__name__)
         self.host = host
         self.csys = None
@@ -47,7 +47,7 @@ class URRobot(object):
         self.secmon = ursecmon.SecondaryMonitor(self.host)  # data from robot at 10Hz
 
         self.rtmon = None
-        if useRTInterface:
+        if use_rt:
             self.rtmon = self.get_realtime_monitor()
         # the next 3 values must be conservative! otherwise we may wait forever
         self.joinEpsilon = 0.01  # precision of joint movem used to wait for move completion
@@ -194,6 +194,14 @@ class URRobot(object):
         wait until a move is completed
         radius and target args are ignored
         """
+        try:
+            self._wait_for_move(radius, target)
+        except Exception as ex:
+            print("EXceptino!!!!!")
+            self.stopj()
+            raise(ex)
+
+    def _wait_for_move(self, radius=0, target=None):
         self.logger.debug("Waiting for move completion")
         # it is necessary to wait since robot may takes a while to get into running state,
         for _ in range(3):
@@ -406,13 +414,11 @@ class Robot(URRobot):
     and includes support for calibrating the robot coordinate system
     """
 
-    def __init__(self, host, useRTInterface=False):
-        URRobot.__init__(self, host, useRTInterface)
+    def __init__(self, host, use_rt=False):
+        URRobot.__init__(self, host, use_rt)
         self.default_linear_acceleration = 0.01
         self.default_linear_velocity = 0.01
-        self.csys_dict = {}
-        self.csys = None
-        self.set_csys("Robot", m3d.Transform())  # identity
+        self.csys = m3d.Transform()
 
     def set_tcp(self, tcp):
         """
@@ -422,20 +428,12 @@ class Robot(URRobot):
             tcp = tcp.pose_vector
         URRobot.set_tcp(self, tcp)
 
-    def add_csys(self, name, matrix):
-        self.csys_dict[name] = matrix
-
-    def get_csys_list(self):
-        return self.csys_dict
-
-    def set_csys(self, name, matrix=None):
+    def set_csys(self, transform):
         """
         Set reference corrdinate system to use
         if matrix != None then a new csys is created
         """
-        if matrix:
-            self.add_csys(name, matrix)
-        self.csys = self.csys_dict[name]
+        self.csys = transform
 
     def set_orientation(self, orient, acc=None, vel=None, radius=0, wait=True):
         """
@@ -609,11 +607,7 @@ class Robot(URRobot):
             vector = vector.list
         return URRobot.set_gravity(self, vector)
 
-    def wait_for_move(self, radius, target):
-        """
-        wait until a move is completed
-        if radius is not 0, returns when tcp is radius closed to target(using mathd3d dist method)
-        """
+    def _wait_for_move(self, radius, target):
         self.logger.debug("Waiting for move completion")
         # it is necessary to wait since robot may takes a while to get into running state,
         for _ in range(3):
