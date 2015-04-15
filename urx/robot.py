@@ -105,6 +105,7 @@ class URRobot(object):
         set robot flange to tool tip transformation
         """
         prog = "set_tcp(p[{}, {}, {}, {}, {}, {}])".format(*tcp)
+        self.logger.info("Sending program: " + prog)
         self.send_program(prog)
 
     def set_payload(self, weight, cog=None):
@@ -514,6 +515,7 @@ class Robot(URRobot):
         get current transform from base to to tcp
         """
         pose = URRobot.getl(self, wait)
+        self.logger.info("Received pose %s from robot", pose)
         trans = self.csys.inverse * m3d.Transform(pose)
         return trans
 
@@ -549,7 +551,7 @@ class Robot(URRobot):
         w = self.csys.orient * pose.orient * m3d.Vector(velocities[3:])
         URRobot.speedl(self, np.concatenate((v.array, w.array)), acc, min_time)
 
-    def movel(self, pose, acc=None, vel=None, wait=True, relative=False, radius=0.01):
+    def movel(self, pose, acc=None, vel=None, wait=True, relative=False, radius=0):
         """
         move linear to given pose in current csys
         """
@@ -559,7 +561,7 @@ class Robot(URRobot):
         else:
             return self.set_pose(t, acc, vel, radius, wait=wait, process=False)
 
-    def movels(self, pose_list, acc=0.01, vel=0.01, radius=0.01, wait=True):
+    def movels(self, pose_list, acc=0.01, vel=0.01, radius=0, wait=True):
         """
         Concatenate several movep commands and applies a blending radius
         pose_list is a list of pose.
