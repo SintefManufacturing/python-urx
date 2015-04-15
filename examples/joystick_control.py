@@ -1,5 +1,6 @@
 """
 example program to control a universal robot with a joystick
+All joysticks are differens, so you will need to modify the script to work with your joystick
 """
 
 import time
@@ -18,10 +19,10 @@ class Cmd(object):
     def reset(self):
         self.axis0 = 0
         self.axis1 = 0
-        self.axis2 = 0
+        self.axis2 = 0 
         self.axis3 = 0
         self.axis4 = 0
-        self.axis5 = 0
+        self.axis5 = 0 
         self.btn0 = 0
         self.btn1 = 0
         self.btn2 = 0
@@ -62,10 +63,14 @@ class Service(object):
             
             #get joystick state
             for i in range(0, self.joystick.get_numaxes()):
-                if abs(self.joystick.get_axis(i)) > 0.2:
-                    tmp = "self.cmd.axis" + str(i) + " = " + str(self.joystick.get_axis(i))
-                    print(tmp)
-                    exec(tmp)
+                val = self.joystick.get_axis(i)
+                if i in (2, 5) and val != 0:
+                    val += 1
+                if abs(val) < 0.2:
+                    val = 0
+                tmp = "self.cmd.axis" + str(i) + " = " + str(val)
+                #print(tmp)
+                exec(tmp)
             
             #get button state
             for i in range(0, self.joystick.get_numbuttons()):
@@ -121,13 +126,11 @@ class Service(object):
 
 if __name__ == "__main__":
     #create robot object 
-    #robot = urx.Robot('192.168.0.90')
-    robot = urx.Robot('localhost')
+    robot = urx.Robot('192.168.0.90')
+    #robot = urx.Robot('localhost')
     #set a base transformation for robot (optional)
     robot.set_tcp((0, 0, 0, 0, 0, 0))
-    trx = m3d.Transform()
-    trx.orient.rotate_zb(-pi/4)
-    robot.set_csys("mycsys", trx)
+    robot.csys.orient.rotate_zb(-pi/4)
     
     #start joystick service with given max speed and acceleration
     service = Service(robot, linear_velocity=0.1, rotational_velocity=0.1, acceleration=0.1)
