@@ -68,7 +68,7 @@ class URRobot(object):
     def is_program_running(self):
         """
         check if program is running.
-        After sending a program it might take several 10th of
+        Warning!!!!!:  After sending a program it might take several 10th of
         a second before the robot enters the running state
         """
         return self.secmon.is_program_running()
@@ -291,8 +291,6 @@ class URRobot(object):
     def movep(self, tpose, acc=0.01, vel=0.01, radius=0, wait=True, relative=False):
         """
         Send a movep command to the robot. See URScript documentation.
-        From URX the main advantage of movep is that it allows for path blending if
-        math3d is installed (BROKEN!)
         """
         if relative:
             l = self.getl()
@@ -339,6 +337,8 @@ class URRobot(object):
         """
         Concatenate several movel commands and applies a blending radius
         pose_list is a list of pose.
+        This method is usefull since any new command from python
+        to robot make the robot stop
         """
         header = "def myProg():\n"
         end = "end\n"
@@ -412,7 +412,7 @@ class Robot(URRobot):
     """
     Generic Python interface to an industrial robot.
     Compared to the URRobot class, this class adds the possibilty to work directly with matrices
-    and includes support for calibrating the robot coordinate system
+    and includes support for setting a reference coordinate system
     """
 
     def __init__(self, host, use_rt=False):
@@ -431,8 +431,7 @@ class Robot(URRobot):
 
     def set_csys(self, transform):
         """
-        Set reference corrdinate system to use
-        if matrix != None then a new csys is created
+        Set reference coordinate system to use
         """
         self.csys = transform
 
@@ -480,9 +479,9 @@ class Robot(URRobot):
         """
         move tcp to point and orientation defined by a transformation
         if process is True, movep is used instead of movel
-        if radius is not 0 and wait is True, the method will return when tcp
-        is radius close to the target. It is then possible to send another command
-        and the controller will blend the path. Blending only works with process(movep). (BROKEN!)
+        #if radius is not 0 and wait is True, the method will return when tcp
+        #is radius close to the target. It is then possible to send another command
+        #and the controller will blend the path. Blending only works with process(movep). (BROKEN!)
         """
         if not acc:
             acc = self.default_linear_acceleration
