@@ -261,30 +261,25 @@ class SecondaryMonitor(Thread):
                 continue
 
             self.lastpacket_timestamp = time.time()
-
+            
+            rmode = 0
             if self._parser.is_v30:
-                if self._dict["RobotModeData"]["robotMode"] == 7 \
-                        and self._dict["RobotModeData"]["isRealRobotEnabled"] == True \
-                        and self._dict["RobotModeData"]["isEmergencyStopped"] == False \
-                        and self._dict["RobotModeData"]["isSecurityStopped"] == False \
-                        and self._dict["RobotModeData"]["isRobotConnected"] == True \
-                        and self._dict["RobotModeData"]["isPowerOnRobot"] == True:
-                    self.running = True
+                rmode = 7
+
+            if self._dict["RobotModeData"]["robotMode"] == rmode \
+                    and self._dict["RobotModeData"]["isRealRobotEnabled"] == True \
+                    and self._dict["RobotModeData"]["isEmergencyStopped"] == False \
+                    and self._dict["RobotModeData"]["isSecurityStopped"] == False \
+                    and self._dict["RobotModeData"]["isRobotConnected"] == True \
+                    and self._dict["RobotModeData"]["isPowerOnRobot"] == True:
+                self.running = True
             else:
-                if self._dict["RobotModeData"]["robotMode"] == 0 \
-                        and self._dict["RobotModeData"]["isRealRobotEnabled"] == True \
-                        and self._dict["RobotModeData"]["isEmergencyStopped"] == False \
-                        and self._dict["RobotModeData"]["isSecurityStopped"] == False \
-                        and self._dict["RobotModeData"]["isRobotConnected"] == True \
-                        and self._dict["RobotModeData"]["isPowerOnRobot"] == True:
-                    self.running = True
-                else:
-                    if self.running:
-                        self.logger.error("Robot not running: " + str(self._dict["RobotModeData"]))
-                    self.running = False
-                with self._dataEvent:
-                    #print("X: new data")
-                    self._dataEvent.notifyAll()
+                if self.running:
+                    self.logger.error("Robot not running: " + str(self._dict["RobotModeData"]))
+                self.running = False
+            with self._dataEvent:
+                #print("X: new data")
+                self._dataEvent.notifyAll()
 
     def _get_data(self):
         """
