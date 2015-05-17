@@ -41,26 +41,33 @@ class Server(socketserver.ThreadingMixIn, socketserver.TCPServer):
         self.shutdown()
 
 
+class FakeRobot(object):
+
+    def run(self):
+        host = "localhost"
+        port = 30002
+        server = Server((host, port), RequestHandler)
+        server.init()
+        server_thread = threading.Thread(target=server.serve_forever)
+        server_thread.daemon = True
+        server_thread.start()
+        print("Fake Universal robot running at ", host, port)
+        try:
+            f = open("packet.bin", "rb")
+            packet = f.read()
+            f.close()
+            while True:
+                time.sleep(0.09) #The real robot published data 10 times a second
+                for handler in server.handlers:
+                    handler.request.sendall(packet)
+        finally:
+            print("Shutting down server")
+            server.close()
 
 
 if __name__ == "__main__":
-    # Port 0 means to select an arbitrary unused port
-    host, port = "localhost", 30002 # this is the standard secondary port for a UR robot
+    r = FakeRobot()
+    r.run()
 
-    server = Server((host, port), RequestHandler)
-    server.init()
-    server_thread = threading.Thread(target=server.serve_forever)
-    server_thread.daemon = True
-    server_thread.start()
-    print("Fake Universal robot running at ", host, port)
-    try:
-        f = open("packet.bin", "rb")
-        packet = f.read()
-        f.close()
-        while True:
-            time.sleep(0.09) #The real robot published data 10 times a second
-            for handler in server.handlers:
-                handler.request.sendall(packet)
-    finally:
-        print("Shutting down server")
-        server.close()
+
+
