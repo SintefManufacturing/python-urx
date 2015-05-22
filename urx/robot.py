@@ -105,7 +105,6 @@ class URRobot(object):
         set robot flange to tool tip transformation
         """
         prog = "set_tcp(p[{}, {}, {}, {}, {}, {}])".format(*tcp)
-        self.logger.info("Sending program: " + prog)
         self.send_program(prog)
 
     def set_payload(self, weight, cog=None):
@@ -198,11 +197,11 @@ class URRobot(object):
         try:
             self._wait_for_move(radius, target)
         except Exception as ex:
-            print("EXceptino!!!!!")
+            self.logger.exception("Exception:")
             self.stopj()
-            raise(ex)
+            raise ex
 
-    def _wait_for_move(self, radius=0, target=None):
+    def _wait_for_move(self, radius, target):
         self.logger.debug("Waiting for move completion")
         # it is necessary to wait since robot may takes a while to get into running state,
         for _ in range(3):
@@ -229,25 +228,24 @@ class URRobot(object):
         jts = self.secmon.get_joint_data(wait)
         return [jts["q_actual0"], jts["q_actual1"], jts["q_actual2"], jts["q_actual3"], jts["q_actual4"], jts["q_actual5"]]
 
+    def speedx(self, command, velocities, acc, min_time):
+        vels = [round(i, self.max_float_length) for i in velocities]
+        vels.append(acc)
+        vels.append(min_time)
+        prog = "{}([{},{},{},{},{},{}], a={}, t_min={})".format(command, *vels)
+        self.send_program(prog)
+
     def speedl(self, velocities, acc, min_time):
         """
         move at given velocities until minimum min_time seconds
         """
-        vels = [round(i, self.max_float_length) for i in velocities]
-        vels.append(acc)
-        vels.append(min_time)
-        prog = "speedl([{},{},{},{},{},{}], a={}, t_min={})".format(*vels)
-        self.send_program(prog)
+        return self.speedx("speedl", velocities, acc, min_time)
 
     def speedj(self, velocities, acc, min_time):
         """
         move at given joint velocities until minimum min_time seconds
         """
-        vels = [round(i, self.max_float_length) for i in velocities]
-        vels.append(acc)
-        vels.append(min_time)
-        prog = "speedj([{},{},{},{},{},{}], a={}, t_min={})".format(*vels)
-        self.send_program(prog)
+        return self.speedx("speedj", velocities, acc, min_time)
 
     def movej(self, joints, acc=0.1, vel=0.05, radius=0, wait=True, relative=False):
         """
@@ -270,37 +268,35 @@ class URRobot(object):
 
     def movel(self, tpose, acc=0.01, vel=0.01, radius=0, wait=True, relative=False):
         """
-        linear move
+        Send a movel command to the robot. See URScript documentation.
         """
-        if relative:
-            l = self.getl()
-            tpose = [v + l[i] for i, v in enumerate(tpose)]
-        tpose = [round(i, self.max_float_length) for i in tpose]
-        #prog = "movel(p%s, a=%s, v=%s)" % (tpose, acc, vel)
-        tpose.append(acc)
-        tpose.append(vel)
-        tpose.append(radius)
-        prog = "movel(p[{},{},{},{},{},{}], a={}, v={}, r={})".format(*tpose)
-        self.send_program(prog)
-        if not wait:
-            return None
-        else:
-            self.wait_for_move(radius, tpose[:6])
-            return self.getl()
+        return self.movex("movep", tpose, acc, vel, radius, wait, relative)
 
     def movep(self, tpose, acc=0.01, vel=0.01, radius=0, wait=True, relative=False):
         """
         Send a movep command to the robot. See URScript documentation.
         """
+        return self.movex("movep", tpose, acc, vel, radius, wait, relative)
+
+    def servoc(self, tpose, acc=0.01, vel=0.01, radius=0, wait=True, relative=False):
+        """
+        Send a servoc command to the robot. See URScript documentation.
+        """
+        return self.movex("movep", tpose, acc, vel, radius, wait, relative)
+
+    def movex(self, command, tpose, acc=0.01, vel=0.01, radius=0, wait=True, relative=False):
+        """
+        Send a move command to the robot. since UR robotene have several methods this one
+        sends whatever is defined in 'command' string
+        """
         if relative:
             l = self.getl()
             tpose = [v + l[i] for i, v in enumerate(tpose)]
         tpose = [round(i, self.max_float_length) for i in tpose]
-        #prog = "movel(p%s, a=%s, v=%s)" % (tpose, acc, vel)
         tpose.append(acc)
         tpose.append(vel)
         tpose.append(radius)
-        prog = "movep(p[{},{},{},{},{},{}], a={}, v={}, r={})".format(*tpose)
+        prog = "{}(p[{},{},{},{},{},{}], a={}, v={}, r={})".format(command, *tpose)
         self.send_program(prog)
         if not wait:
             return None
@@ -340,9 +336,18 @@ class URRobot(object):
         This method is usefull since any new command from python
         to robot make the robot stop
         """
+        return self.movexs("movel", pose_list, acc, vel, radius, wait)
+
+    def movexs(self, command, pose_list, acc=0.01, vel=0.01, radius=0.01, wait=True):
+        """
+        Concatenate several movex commands and applies a blending radius
+        pose_list is a list of pose.
+        This method is usefull since any new command from python
+        to robot make the robot stop
+        """
         header = "def myProg():\n"
         end = "end\n"
-        template = "movel(p[{},{},{},{},{},{}], a={}, v={}, r={})\n"
+        template = "{}(p[{},{},{},{},{},{}], a={}, v={}, r={})\n"
         prog = header
         for idx, pose in enumerate(pose_list):
             pose.append(acc)
@@ -351,7 +356,7 @@ class URRobot(object):
                 pose.append(radius)
             else:
                 pose.append(0)
-            prog += template.format(*pose)
+            prog += template.format(command, *pose)
         prog += end
         self.send_program(prog)
         if not wait:
@@ -475,46 +480,41 @@ class Robot(URRobot):
         trans = m3d.Transform(self.get_orientation(), m3d.Vector(vect))
         return self.set_pose(trans, acc, vel, radius, wait=wait)
 
-    def set_pose(self, trans, acc=None, vel=None, radius=0, wait=True, process=False):
+    def set_pose(self, trans, acc=None, vel=None, radius=0, wait=True, command="movel"):
         """
         move tcp to point and orientation defined by a transformation
-        if process is True, movep is used instead of movel
-        #if radius is not 0 and wait is True, the method will return when tcp
-        #is radius close to the target. It is then possible to send another command
-        #and the controller will blend the path. Blending only works with process(movep). (BROKEN!)
+        UR robots have several move commands, by default movel is used but it can be changed
+        using the command argument
         """
         if not acc:
             acc = self.default_linear_acceleration
         if not vel:
             vel = self.default_linear_velocity
         t = self.csys * trans
-        if process:
-            pose = URRobot.movep(self, t.pose_vector, acc=acc, vel=vel, wait=wait, radius=radius)
-        else:
-            pose = URRobot.movel(self, t.pose_vector, acc=acc, vel=vel, wait=wait, radius=radius)
+        pose = URRobot.movex(self, command, t.pose_vector, acc=acc, vel=vel, wait=wait, radius=radius)
         if pose is not None:  # movel does not return anything when wait is False
             return self.csys.inverse * m3d.Transform(pose)
 
-    def add_pose_base(self, trans, acc=None, vel=None, radius=0, wait=True, process=False):
+    def add_pose_base(self, trans, acc=None, vel=None, radius=0, wait=True, command="movel"):
         """
         Add transform expressed in base coordinate
         """
         pose = self.get_pose()
-        return self.set_pose(trans * pose, acc, vel, radius, wait=wait, process=process)
+        return self.set_pose(trans * pose, acc, vel, radius, wait=wait, command=command)
 
-    def add_pose_tool(self, trans, acc=None, vel=None, radius=0, wait=True, process=False):
+    def add_pose_tool(self, trans, acc=None, vel=None, radius=0, wait=True, command="movel"):
         """
         Add transform expressed in tool coordinate
         """
         pose = self.get_pose()
-        return self.set_pose(pose * trans, acc, vel, radius, wait=wait, process=process)
+        return self.set_pose(pose * trans, acc, vel, radius, wait=wait, command=command)
 
     def get_pose(self, wait=False):
         """
         get current transform from base to to tcp
         """
         pose = URRobot.getl(self, wait)
-        self.logger.info("Received pose %s from robot", pose)
+        self.logger.debug("Received pose %s from robot", pose)
         trans = self.csys.inverse * m3d.Transform(pose)
         return trans
 
@@ -532,14 +532,14 @@ class Robot(URRobot):
         trans = self.get_pose(wait)
         return trans.pos
 
-    def speedl(self, velocities, acc, min_time):
+    def speedx(self, command, velocities, acc, min_time):
         """
-        move at given velocities in base csys until minimum min_time seconds
+        send command to robot formated like speedl or speedj
+        move at given velocities until minimum min_time seconds
         """
-        #r = m3d.Transform(velocities)
         v = self.csys.orient * m3d.Vector(velocities[:3])
         w = self.csys.orient * m3d.Vector(velocities[3:])
-        URRobot.speedl(self, np.concatenate((v.array, w.array)), acc, min_time)
+        URRobot.speedx(self, command, np.concatenate((v.array, w.array)), acc, min_time)
 
     def speedl_tool(self, velocities, acc, min_time):
         """
@@ -550,20 +550,23 @@ class Robot(URRobot):
         w = self.csys.orient * pose.orient * m3d.Vector(velocities[3:])
         URRobot.speedl(self, np.concatenate((v.array, w.array)), acc, min_time)
 
-    def movel(self, pose, acc=None, vel=None, wait=True, relative=False, radius=0):
+    def movex(self, command, pose, acc=None, vel=None, wait=True, relative=False, radius=0):
         """
-        move linear to given pose in current csys
+        Send a move command to the robot. since UR robotene have several methods this one
+        sends whatever is defined in 'command' string
         """
         t = m3d.Transform(pose)
         if relative:
-            return self.add_pose_base(t, acc, vel, wait=wait, process=False)
+            return self.add_pose_base(t, acc, vel, wait=wait, command=command)
         else:
-            return self.set_pose(t, acc, vel, radius, wait=wait, process=False)
+            return self.set_pose(t, acc, vel, radius, wait=wait, command=command)
 
-    def movels(self, pose_list, acc=0.01, vel=0.01, radius=0, wait=True):
+    def movexs(self, command, pose_list, acc=0.01, vel=0.01, radius=0.01, wait=True):
         """
-        Concatenate several movep commands and applies a blending radius
+        Concatenate several movex commands and applies a blending radius
         pose_list is a list of pose.
+        This method is usefull since any new command from python
+        to robot make the robot stop
         """
         new_poses = []
         for pose in pose_list:
@@ -571,30 +574,17 @@ class Robot(URRobot):
             pose = t.pose_vector
             pose = [round(i, self.max_float_length) for i in pose]
             new_poses.append(pose)
-        return URRobot.movels(self, new_poses, acc, vel, radius, wait=wait)
-
-    def movec(self, pose_via, pose_to, acc=0.01, vel=0.01, radius=0, wait=True):
-        """
-        Move Circular: Move to position (circular in tool-space)
-        see UR documentation
-        """
-        via = self.csys * m3d.Transform(pose_via)
-        to = self.csys * m3d.Transform(pose_to)
-        return URRobot.movec(self, via.pose_vector, to.pose_vector, acc=acc, vel=vel, radius=radius, wait=wait)
+        return URRobot.movexs(self, command, new_poses, acc, vel, radius, wait=wait)
 
     def movel_tool(self, pose, acc=None, vel=None, wait=True):
         """
         move linear to given pose in tool coordinate
         """
-        t = m3d.Transform(pose)
-        self.add_pose_tool(t, acc, vel, wait=wait, process=False)
+        return self.movex_tool("movel", pose, acc, vel, wait)
 
-    def movep(self, pose, acc=None, vel=None, radius=0, wait=True, relative=False):
-        pose = m3d.Transform(pose)
-        if relative:
-            return self.add_pose_base(pose, acc, vel, wait=wait, process=True, radius=radius)
-        else:
-            return self.set_pose(pose, acc, vel, wait=wait, process=True, radius=radius)
+    def movex_tool(self, command, pose, acc=None, vel=None, wait=True):
+        t = m3d.Transform(pose)
+        self.add_pose_tool(t, acc, vel, wait=wait, command=command)
 
     def getl(self, wait=False):
         """
