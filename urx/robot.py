@@ -49,8 +49,9 @@ class URRobot(object):
         self.rtmon = None
         if use_rt:
             self.rtmon = self.get_realtime_monitor()
-        # the next 3 values must be conservative! otherwise we may wait forever
-        self.joinEpsilon = 0.01  # precision of joint movem used to wait for move completion
+        # precision of joint movem used to wait for move completion
+        # the value must be conservative! otherwise we may wait forever
+        self.joinEpsilon = 0.01  
         # It seems URScript is  limited in the character length of floats it accepts
         self.max_float_length = 6  # FIXME: check max length!!!
 
@@ -63,6 +64,10 @@ class URRobot(object):
         return self.__repr__()
 
     def is_running(self):
+        """
+        Return True if robot is running (not
+        necessary running a program, it might be idle)
+        """
         return self.secmon.running
 
     def is_program_running(self):
@@ -189,7 +194,8 @@ class URRobot(object):
         prog = "set_tool_voltage(%s)" % (val)
         self.send_program(prog)
 
-    def wait_for_move(self, radius=0, target=None):
+    #def wait_for_move(self, radius=0, target=None):
+    def wait_for_move(self, radius, target):
         """
         wait until a move is completed
         radius and target args are ignored
@@ -202,7 +208,7 @@ class URRobot(object):
             raise ex
 
     def _wait_for_move(self, radius, target):
-        self.logger.debug("Waiting for move completion")
+        self.logger.debug("Waiting for move completion with radius %s and target %s", radius, target)
         # it is necessary to wait since robot may takes a while to get into running state,
         for _ in range(3):
             self.secmon.wait()
@@ -254,15 +260,9 @@ class URRobot(object):
         if relative:
             l = self.getj()
             joints = [v + l[i] for i, v in enumerate(joints)]
-        joints = [round(j, self.max_float_length) for j in joints]
-        joints.append(acc)
-        joints.append(vel)
-        joints.append(radius)
-        prog = "movej([{},{},{},{},{},{}], a={}, v={}, r={})".format(*joints)
+        prog = self._format_move("movej", joints, acc, vel, radius)
         self.send_program(prog)
-        if not wait:
-            return None
-        else:
+        if wait:
             self.wait_for_move(radius, joints[:6])
             return self.getj()
 
@@ -270,7 +270,7 @@ class URRobot(object):
         """
         Send a movel command to the robot. See URScript documentation.
         """
-        return self.movex("movep", tpose, acc, vel, radius, wait, relative)
+        return self.movex("movel", tpose, acc, vel, radius, wait, relative)
 
     def movep(self, tpose, acc=0.01, vel=0.01, radius=0, wait=True, relative=False):
         """
@@ -282,7 +282,14 @@ class URRobot(object):
         """
         Send a servoc command to the robot. See URScript documentation.
         """
-        return self.movex("movep", tpose, acc, vel, radius, wait, relative)
+        return self.movex("servoc", tpose, acc, vel, radius, wait, relative)
+
+    def _format_move(self, command, tpose, acc, vel, radius, prefix=""):
+        tpose = [round(i, self.max_float_length) for i in tpose]
+        tpose.append(acc)
+        tpose.append(vel)
+        tpose.append(radius)
+        return "{}({}[{},{},{},{},{},{}], a={}, v={}, r={})".format(command, prefix, *tpose)
 
     def movex(self, command, tpose, acc=0.01, vel=0.01, radius=0, wait=True, relative=False):
         """
@@ -292,15 +299,9 @@ class URRobot(object):
         if relative:
             l = self.getl()
             tpose = [v + l[i] for i, v in enumerate(tpose)]
-        tpose = [round(i, self.max_float_length) for i in tpose]
-        tpose.append(acc)
-        tpose.append(vel)
-        tpose.append(radius)
-        prog = "{}(p[{},{},{},{},{},{}], a={}, v={}, r={})".format(command, *tpose)
+        prog = self._format_move(command, tpose, acc, vel, radius, prefix="p")
         self.send_program(prog)
-        if not wait:
-            return None
-        else:
+        if wait:
             self.wait_for_move(radius, tpose[:6])
             return self.getl()
 
@@ -323,9 +324,7 @@ class URRobot(object):
         pose_to = [round(i, self.max_float_length) for i in pose_to]
         prog = "movec(p%s, p%s, a=%s, v=%s, r=%s)" % (pose_via, pose_to, acc, vel, radius)
         self.send_program(prog)
-        if not wait:
-            return None
-        else:
+        if wait:
             self.wait_for_move(radius, pose_to)
             return self.getl()
 
@@ -347,21 +346,14 @@ class URRobot(object):
         """
         header = "def myProg():\n"
         end = "end\n"
-        template = "{}(p[{},{},{},{},{},{}], a={}, v={}, r={})\n"
         prog = header
         for idx, pose in enumerate(pose_list):
-            pose.append(acc)
-            pose.append(vel)
-            if idx != (len(pose_list) - 1):
-                pose.append(radius)
-            else:
-                pose.append(0)
-            prog += template.format(command, *pose)
+            if idx == (len(pose_list) - 1):
+                radius = 0
+            prog += self._format_move(command, pose, acc, vel, radius, prefix="p")
         prog += end
         self.send_program(prog)
-        if not wait:
-            return None
-        else:
+        if wait:
             self.wait_for_move(radius=0, target=pose_list[-1])
             return self.getl()
 
@@ -480,6 +472,13 @@ class Robot(URRobot):
         trans = m3d.Transform(self.get_orientation(), m3d.Vector(vect))
         return self.set_pose(trans, acc, vel, radius, wait=wait)
 
+    def movec(self, pose_via, pose_to, acc=0.01, vel=0.01, radius=0, wait=True):
+        pose_via = self.csys * m3d.Transform(pose_via)
+        pose_to = self.csys * m3d.Transform(pose_to)
+        pose = URRobot.movec(self, pose_via.pose_vector, pose_to.pose_vector, acc=acc, vel=vel, wait=wait, radius=radius)
+        if pose is not None:
+            return self.csys.inverse * m3d.Transform(pose)
+
     def set_pose(self, trans, acc=None, vel=None, radius=0, wait=True, command="movel"):
         """
         move tcp to point and orientation defined by a transformation
@@ -492,7 +491,7 @@ class Robot(URRobot):
             vel = self.default_linear_velocity
         t = self.csys * trans
         pose = URRobot.movex(self, command, t.pose_vector, acc=acc, vel=vel, wait=wait, radius=radius)
-        if pose is not None:  # movel does not return anything when wait is False
+        if pose is not None:
             return self.csys.inverse * m3d.Transform(pose)
 
     def add_pose_base(self, trans, acc=None, vel=None, radius=0, wait=True, command="movel"):
@@ -572,7 +571,6 @@ class Robot(URRobot):
         for pose in pose_list:
             t = self.csys * m3d.Transform(pose)
             pose = t.pose_vector
-            pose = [round(i, self.max_float_length) for i in pose]
             new_poses.append(pose)
         return URRobot.movexs(self, command, new_poses, acc, vel, radius, wait=wait)
 
@@ -599,7 +597,7 @@ class Robot(URRobot):
         return URRobot.set_gravity(self, vector)
 
     def _wait_for_move(self, radius, target):
-        self.logger.debug("Waiting for move completion")
+        self.logger.debug("Waiting for move completion with math3d using raidus %s and target %s", radius, target)
         # it is necessary to wait since robot may takes a while to get into running state,
         for _ in range(3):
             self.secmon.wait()

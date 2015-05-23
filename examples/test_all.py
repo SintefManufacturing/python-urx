@@ -9,21 +9,22 @@ import sys
 import urx
 import logging
 
-if sys.version_info[0] < 3: #support python v2
+if sys.version_info[0] < 3:  # support python v2
     input = raw_input
 
 def wait():
-    global do_wait
     if do_wait:
         input()
 
 if __name__ == "__main__":
+    logging.basicConfig(level=logging.WARN)
+    
+    do_wait = True
     if len(sys.argv) > 1:
         do_wait = False
-    else:
-        do_wait = True
 
-    rob = urx.Robot("192.168.1.6")
+    #rob = urx.Robot("192.168.1.6")
+    rob = urx.Robot("localhost")
     rob.set_tcp((0, 0, 0, 0, 0, 0))
     rob.set_payload(0.5, (0, 0, 0))
     try:
@@ -31,11 +32,11 @@ if __name__ == "__main__":
         v = 0.05
         a = 0.3
         r = 0.01
-        print("Digital out 0 and 1 are: ", rob.get_digital_out(0), rob.get_digital_out(1) )
+        print("Digital out 0 and 1 are: ", rob.get_digital_out(0), rob.get_digital_out(1))
         print("Analog inputs are: ", rob.get_analog_inputs())
         initj = rob.getj()
         print("Initial joint configuration is ", initj)
-        t = rob.get_transform()
+        t = rob.get_pose()
         print("Transformation from base to tcp is: ", t)
 
         print("Translating in x")
@@ -49,7 +50,7 @@ if __name__ == "__main__":
         pose[2] += l
         rob.movel(pose, acc=a, vel=v, wait=False)
         print("Waiting for end move")
-        rob.wait_for_move()
+        rob.wait_for_move(0, pose)
 
         print("Moving through several points with a radius")
         wait()
@@ -62,7 +63,7 @@ if __name__ == "__main__":
         print("rotate tcp around around base z ")
         wait()
         t.orient.rotate_zb(pi / 8)
-        rob.apply_transform(t, vel=v, acc=a)
+        rob.set_pose(t, vel=v, acc=a)
 
         print("moving in tool z")
         wait()
@@ -78,14 +79,13 @@ if __name__ == "__main__":
 
         print("Test movep, it will fail on older controllers")
         wait()
-        init = rob.get_transform()
+        init = rob.get_pose()
         pose = init.copy()
         for _ in range(3):
             pose.pos[0] += l
             rob.movep(pose, acc=a, vel=v, radius=r)
-        rob.movep(init, acc=a, vel=v, radius=r)#back to start
+        rob.movep(init, acc=a, vel=v, radius=r)  # back to start
 
-        
         print("Test movec")
         wait()
         via = init.copy()
@@ -95,9 +95,7 @@ if __name__ == "__main__":
         rob.movec(via, to, acc=a, vel=v, radius=r)
 
         print("Sending robot back to original position")
-        rob.movej(initj, acc=0.8, vel=0.2) 
-
+        rob.movej(initj, acc=0.8, vel=0.2)
 
     finally:
         rob.close()
-
