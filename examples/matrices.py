@@ -4,7 +4,8 @@ import urx
 import logging
 
 if __name__ == "__main__":
-    rob = urx.Robot("192.168.1.6")
+    #rob = urx.Robot("192.168.1.6")
+    rob = urx.Robot("localhost")
     rob.set_tcp((0,0,0,0,0,0))
     rob.set_payload(0.5, (0,0,0))
     try:
@@ -13,7 +14,7 @@ if __name__ == "__main__":
         a = 0.3
         j = rob.getj()
         print("Initial joint configuration is ", j)
-        t = rob.get_transform()
+        t = rob.get_pose()
         print("Transformation from base to tcp is: ", t)
         print("Translating in x")
         rob.translate((l, 0, 0), acc=a, vel=v)
@@ -27,7 +28,7 @@ if __name__ == "__main__":
         print("Translate in -x and rotate")
         t.orient.rotate_zb(pi/4)
         t.pos[0] -= l
-        rob.apply_transform(t, vel=v, acc=a)
+        rob.set_pose(t, vel=v, acc=a)
         print("Sending robot back to original position")
         rob.movej(j, acc=0.8, vel=0.2) 
 
