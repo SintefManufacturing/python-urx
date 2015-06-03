@@ -39,11 +39,11 @@ class URRobot(object):
     """
 
     def __init__(self, host, use_rt=False):
-        self.logger = logging.getLogger(self.__class__.__name__)
+        self.logger = logging.getLogger("urx")
         self.host = host
         self.csys = None
 
-        self.logger.info("Opening secondary monitor socket")
+        self.logger.debug("Opening secondary monitor socket")
         self.secmon = ursecmon.SecondaryMonitor(self.host)  # data from robot at 10Hz
 
         self.rtmon = None
@@ -270,19 +270,19 @@ class URRobot(object):
         """
         Send a movel command to the robot. See URScript documentation.
         """
-        return self.movex("movel", tpose, acc, vel, radius, wait, relative)
+        return self.movex("movel", tpose, acc=acc, vel=vel, radius=radius, wait=wait, relative=relative)
 
     def movep(self, tpose, acc=0.01, vel=0.01, radius=0, wait=True, relative=False):
         """
         Send a movep command to the robot. See URScript documentation.
         """
-        return self.movex("movep", tpose, acc, vel, radius, wait, relative)
+        return self.movex("movep", tpose, acc=acc, vel=vel, radius=radius, wait=wait, relative=relative)
 
     def servoc(self, tpose, acc=0.01, vel=0.01, radius=0, wait=True, relative=False):
         """
         Send a servoc command to the robot. See URScript documentation.
         """
-        return self.movex("servoc", tpose, acc, vel, radius, wait, relative)
+        return self.movex("servoc", tpose, acc=acc, vel=vel, radius=radius, wait=wait, relative=relative)
 
     def _format_move(self, command, tpose, acc, vel, radius, prefix=""):
         tpose = [round(i, self.max_float_length) for i in tpose]
@@ -305,14 +305,15 @@ class URRobot(object):
             self.wait_for_move(radius, tpose[:6])
             return self.getl()
 
-    def getl(self, wait=False):
+    def getl(self, wait=False, _log=True):
         """
         get TCP position
         """
         pose = self.secmon.get_cartesian_info(wait)
         if pose:
             pose = [pose["X"], pose["Y"], pose["Z"], pose["Rx"], pose["Ry"], pose["Rz"]]
-        self.logger.debug("Current pose from robot: " + str(pose))
+        if _log:
+            self.logger.debug("Received pose from robot: %s", pose)
         return pose
 
     def movec(self, pose_via, pose_to, acc=0.01, vel=0.01, radius=0, wait=True):
@@ -350,7 +351,7 @@ class URRobot(object):
         for idx, pose in enumerate(pose_list):
             if idx == (len(pose_list) - 1):
                 radius = 0
-            prog += self._format_move(command, pose, acc, vel, radius, prefix="p")
+            prog += self._format_move(command, pose, acc, vel, radius, prefix="p") + "\n"
         prog += end
         self.send_program(prog)
         if wait:
@@ -403,6 +404,31 @@ class URRobot(object):
         self.rtmon.set_csys(self.csys)
         return self.rtmon
 
+    def translate(self, vect, acc=0.01, vel=0.01, wait=True, command="movel"):
+        """
+        move tool in base coordinate, keeping orientation
+        """
+        p = self.getl()
+        p[0] += vect[0]
+        p[1] += vect[1]
+        p[2] += vect[2]
+        return self.movex(command, p, vel=vel, acc=acc, wait=wait)
+
+    def up(self, z=0.05, acc=0.01, vel=0.01):
+        """
+        Move up in csys z
+        """
+        p = self.getl()
+        p[2] += z
+        self.movel(p, acc=acc, vel=vel)
+
+    def down(self, z=0.05, acc=0.01, vel=0.01):
+        """
+        Move down in csys z
+        """
+        self.up(-z, acc, vel)
+
+
 
 class Robot(URRobot):
 
@@ -414,8 +440,6 @@ class Robot(URRobot):
 
     def __init__(self, host, use_rt=False):
         URRobot.__init__(self, host, use_rt)
-        self.default_linear_acceleration = 0.01
-        self.default_linear_velocity = 0.01
         self.csys = m3d.Transform()
 
     def set_tcp(self, tcp):
@@ -432,7 +456,7 @@ class Robot(URRobot):
         """
         self.csys = transform
 
-    def set_orientation(self, orient, acc=None, vel=None, radius=0, wait=True):
+    def set_orientation(self, orient, acc=0.01, vel=0.01, radius=0, wait=True):
         """
         set tool orientation using a orientation matric from math3d
         or a orientation vector
@@ -443,17 +467,7 @@ class Robot(URRobot):
         trans.orient = orient
         self.set_pose(trans, acc, vel, radius, wait=wait)
 
-    def translate(self, vect, acc=None, vel=None, radius=0, wait=True):
-        """
-        move tool in base coordinate, keeping orientation
-        """
-        t = m3d.Transform()
-        if not isinstance(vect, m3d.Vector):
-            vect = m3d.Vector(vect)
-        t.pos += m3d.Vector(vect)
-        return self.add_pose_base(t, acc, vel, radius, wait=wait)
-
-    def translate_tool(self, vect, acc=None, vel=None, radius=0, wait=True):
+    def translate_tool(self, vect, acc=0.01, vel=0.01, radius=0, wait=True):
         """
         move tool in tool coordinate, keeping orientation
         """
@@ -463,7 +477,13 @@ class Robot(URRobot):
         t.pos += vect
         return self.add_pose_tool(t, acc, vel, radius, wait=wait)
 
-    def set_pos(self, vect, acc=None, vel=None, radius=0, wait=True):
+    def back(self, z=0.05, acc=0.01, vel=0.01):
+        """
+        move in z tool
+        """
+        self.translate_tool((0, 0, -z), acc=acc, vel=vel)
+
+    def set_pos(self, vect, acc=0.01, vel=0.01, radius=0, wait=True):
         """
         set tool to given pos, keeping constant orientation
         """
@@ -473,48 +493,50 @@ class Robot(URRobot):
         return self.set_pose(trans, acc, vel, radius, wait=wait)
 
     def movec(self, pose_via, pose_to, acc=0.01, vel=0.01, radius=0, wait=True):
+        """
+        Move Circular: Move to position (circular in tool-space)
+        see UR documentation
+        """
         pose_via = self.csys * m3d.Transform(pose_via)
         pose_to = self.csys * m3d.Transform(pose_to)
         pose = URRobot.movec(self, pose_via.pose_vector, pose_to.pose_vector, acc=acc, vel=vel, wait=wait, radius=radius)
         if pose is not None:
             return self.csys.inverse * m3d.Transform(pose)
 
-    def set_pose(self, trans, acc=None, vel=None, radius=0, wait=True, command="movel"):
+    def set_pose(self, trans, acc=0.01, vel=0.01, radius=0, wait=True, command="movel"):
         """
         move tcp to point and orientation defined by a transformation
         UR robots have several move commands, by default movel is used but it can be changed
         using the command argument
         """
-        if not acc:
-            acc = self.default_linear_acceleration
-        if not vel:
-            vel = self.default_linear_velocity
+        self.logger.debug("Setting pose to %s", trans.pose_vector)
         t = self.csys * trans
         pose = URRobot.movex(self, command, t.pose_vector, acc=acc, vel=vel, wait=wait, radius=radius)
         if pose is not None:
             return self.csys.inverse * m3d.Transform(pose)
 
-    def add_pose_base(self, trans, acc=None, vel=None, radius=0, wait=True, command="movel"):
+    def add_pose_base(self, trans, acc=0.01, vel=0.01, radius=0, wait=True, command="movel"):
         """
         Add transform expressed in base coordinate
         """
         pose = self.get_pose()
         return self.set_pose(trans * pose, acc, vel, radius, wait=wait, command=command)
 
-    def add_pose_tool(self, trans, acc=None, vel=None, radius=0, wait=True, command="movel"):
+    def add_pose_tool(self, trans, acc=0.01, vel=0.01, radius=0, wait=True, command="movel"):
         """
         Add transform expressed in tool coordinate
         """
         pose = self.get_pose()
         return self.set_pose(pose * trans, acc, vel, radius, wait=wait, command=command)
 
-    def get_pose(self, wait=False):
+    def get_pose(self, wait=False, _log=True):
         """
         get current transform from base to to tcp
         """
-        pose = URRobot.getl(self, wait)
-        self.logger.debug("Received pose %s from robot", pose)
+        pose = URRobot.getl(self, wait, _log)
         trans = self.csys.inverse * m3d.Transform(pose)
+        if _log:
+            self.logger.debug("Returning pose to user: %s", trans.pose_vector)
         return trans
 
     def get_orientation(self, wait=False):
@@ -549,7 +571,7 @@ class Robot(URRobot):
         w = self.csys.orient * pose.orient * m3d.Vector(velocities[3:])
         URRobot.speedl(self, np.concatenate((v.array, w.array)), acc, min_time)
 
-    def movex(self, command, pose, acc=None, vel=None, wait=True, relative=False, radius=0):
+    def movex(self, command, pose, acc=0.01, vel=0.01, wait=True, relative=False, radius=0):
         """
         Send a move command to the robot. since UR robotene have several methods this one
         sends whatever is defined in 'command' string
@@ -574,21 +596,21 @@ class Robot(URRobot):
             new_poses.append(pose)
         return URRobot.movexs(self, command, new_poses, acc, vel, radius, wait=wait)
 
-    def movel_tool(self, pose, acc=None, vel=None, wait=True):
+    def movel_tool(self, pose, acc=0.01, vel=0.01, wait=True):
         """
         move linear to given pose in tool coordinate
         """
-        return self.movex_tool("movel", pose, acc, vel, wait)
+        return self.movex_tool("movel", pose, acc=acc, vel=vel, wait=wait)
 
-    def movex_tool(self, command, pose, acc=None, vel=None, wait=True):
+    def movex_tool(self, command, pose, acc=0.01, vel=0.01, wait=True):
         t = m3d.Transform(pose)
         self.add_pose_tool(t, acc, vel, wait=wait, command=command)
 
-    def getl(self, wait=False):
+    def getl(self, wait=False, _log=True):
         """
         return current transformation from tcp to current csys
         """
-        t = self.get_pose(wait)
+        t = self.get_pose(wait, _log)
         return t.pose_vector.tolist()
 
     def set_gravity(self, vector):
@@ -605,10 +627,11 @@ class Robot(URRobot):
         while True:
             if not self.is_running():
                 raise RobotException("Robot stopped")
-            pose = self.get_pose(wait=True)
+            pose = self.get_pose(wait=True, _log=False)
             dist = pose.dist(target)
             self.logger.debug("distance to target is: %s, target dist is %s", dist, radius)
             if (dist < radius) or not self.secmon.is_program_running():
+            #if (dist < radius):
                 self.logger.debug("move has ended")
                 return
 
