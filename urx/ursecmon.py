@@ -25,6 +25,15 @@ class ParsingException(Exception):
     def __init__(self, *args):
         Exception.__init__(self, *args)
 
+class Program(object):
+    def __init__(self, prog):
+        self.program = prog
+        self.condition = Condition()
+
+    def __str__(self):
+        return "Program({})".format(self.program)
+    __repr__ = __str__
+
 
 class TimeoutException(Exception):
 
@@ -35,7 +44,7 @@ class TimeoutException(Exception):
 class ParserUtils(object):
 
     def __init__(self):
-        self.logger = logging.getLogger(__name__)
+        self.logger = logging.getLogger("ursecmon")
         self.is_v30 = False
 
     def parse(self, data):
@@ -203,7 +212,7 @@ class SecondaryMonitor(Thread):
 
     def __init__(self, host):
         Thread.__init__(self)
-        self.logger = logging.getLogger(self.__class__.__name__)
+        self.logger = logging.getLogger("ursecmon")
         self._parser = ParserUtils()
         self._dict = {}
         self._dictLock = Lock()
@@ -227,11 +236,16 @@ class SecondaryMonitor(Thread):
         If another program is send while a program is running the first program is aborded.
         """
         prog.strip()
-        self.logger.debug("Sending program: " + prog)
+        self.logger.debug("Enqueueing program: %s", prog)
         if not isinstance(prog, bytes):
             prog = prog.encode()
-        with self._prog_queue_lock:
-            self._prog_queue.append(prog + b"\n")
+
+        data = Program(prog + b"\n")
+        with data.condition:
+            with self._prog_queue_lock:
+                self._prog_queue.append(data)
+            data.condition.wait()
+            self.logger.debug("program sendt: %s", data)
 
     def run(self):
         """
@@ -240,12 +254,13 @@ class SecondaryMonitor(Thread):
         Only the last connected client is the primary client,
         so this is not guaranted and we cannot rely on information to the primary client.
         """
-
         while not self._trystop:
             with self._prog_queue_lock:
                 if len(self._prog_queue) > 0:
-                    prog = self._prog_queue.pop(0)
-                    self._s_secondary.send(prog)
+                    data = self._prog_queue.pop(0)
+                    self._s_secondary.send(data.program)
+                    with data.condition:
+                        data.condition.notify_all()
 
             data = self._get_data()
             try:
