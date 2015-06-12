@@ -4,8 +4,8 @@ import urx
 import logging
 
 if __name__ == "__main__":
-    #rob = urx.Robot("192.168.1.6")
-    rob = urx.Robot("localhost")
+    rob = urx.Robot("192.168.1.100")
+    #rob = urx.Robot("localhost")
     rob.set_tcp((0,0,0,0,0,0))
     rob.set_payload(0.5, (0,0,0))
     try:

@@ -69,7 +69,8 @@ class Service(object):
                 if abs(val) < 0.2:
                     val = 0
                 tmp = "self.cmd.axis" + str(i) + " = " + str(val)
-                #print(tmp)
+                if val != 0:
+                    print(tmp)
                 exec(tmp)
             
             #get button state
@@ -92,20 +93,20 @@ class Service(object):
             speeds = [0, 0, 0, 0, 0, 0]
 
             #get linear speed from joystick
-            speeds[0] = self.cmd.axis0 * self.linear_velocity
+            speeds[0] = -1 * self.cmd.axis0 * self.linear_velocity
             speeds[1] = self.cmd.axis1 * self.linear_velocity
-            if self.cmd.btn4 and not self.cmd.btn6:
-                speeds[2] = self.linear_velocity
-            if self.cmd.btn6 and not self.cmd.btn4:
+            if self.cmd.btn4 and not self.cmd.axis2:
                 speeds[2] = -self.linear_velocity
+            if self.cmd.axis2 and not self.cmd.btn4:
+                speeds[2] = self.cmd.axis2 * self.linear_velocity
 
             #get rotational speed from joystick
-            speeds[4] = -1 * self.cmd.axis2 * self.rotational_velocity
-            speeds[3] = self.cmd.axis3 * self.rotational_velocity
-            if self.cmd.btn1 and not self.cmd.btn2:
+            speeds[4] = -1 * self.cmd.axis3 * self.rotational_velocity
+            speeds[3] = -1 * self.cmd.axis4 * self.rotational_velocity
+            if self.cmd.btn5 and not self.cmd.axis5:
                 speeds[5] = self.rotational_velocity
-            if self.cmd.btn2 and not self.cmd.btn1:
-                speeds[5] = -self.rotational_velocity
+            if self.cmd.axis5 and not self.cmd.btn5:
+                speeds[5] = self.cmd.axis5 * -self.rotational_velocity
             
             #for some reasons everything is inversed
             speeds = [-i for i in speeds]
@@ -117,7 +118,6 @@ class Service(object):
             else:
                 self.robot.speedl(speeds, acc=self.acceleration, min_time=2)
 
-            time.sleep(0.12)#URX secondday port accepts command at 10Hz, no need to go faster
 
     def close(self):
         if self.joystick:
@@ -125,13 +125,10 @@ class Service(object):
 
 
 if __name__ == "__main__":
-    #create robot object 
-    robot = urx.Robot('192.168.0.90')
-    #robot = urx.Robot('localhost')
-    #set a base transformation for robot (optional)
-    robot.set_tcp((0, 0, 0, 0, 0, 0))
-    robot.csys.orient.rotate_zb(-pi/4)
-    
+    robot = urx.Robot("192.168.1.100")
+    r = robot
+
+
     #start joystick service with given max speed and acceleration
     service = Service(robot, linear_velocity=0.1, rotational_velocity=0.1, acceleration=0.1)
     service.init_joystick()

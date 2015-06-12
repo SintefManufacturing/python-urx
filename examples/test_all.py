@@ -14,17 +14,18 @@ if sys.version_info[0] < 3:  # support python v2
 
 def wait():
     if do_wait:
+        print("Click enter to continue")
         input()
 
 if __name__ == "__main__":
-    logging.basicConfig(level=logging.WARN)
+    logging.basicConfig(level=logging.INFO)
     
     do_wait = True
     if len(sys.argv) > 1:
         do_wait = False
 
-    #rob = urx.Robot("192.168.1.6")
-    rob = urx.Robot("localhost")
+    rob = urx.Robot("192.168.1.100")
+    #rob = urx.Robot("localhost")
     rob.set_tcp((0, 0, 0, 0, 0, 0))
     rob.set_payload(0.5, (0, 0, 0))
     try:
@@ -49,8 +50,8 @@ if __name__ == "__main__":
         wait()
         pose[2] += l
         rob.movel(pose, acc=a, vel=v, wait=False)
-        print("Waiting for end move")
-        rob.wait_for_move(0, pose)
+        print("Waiting 2s for end move")
+        time.sleep(2)
 
         print("Moving through several points with a radius")
         wait()
@@ -77,22 +78,14 @@ if __name__ == "__main__":
         print("stop robot")
         rob.stopj()
 
-        print("Test movep, it will fail on older controllers")
-        wait()
-        init = rob.get_pose()
-        pose = init.copy()
-        for _ in range(3):
-            pose.pos[0] += l
-            rob.movep(pose, acc=a, vel=v, radius=r)
-        rob.movep(init, acc=a, vel=v, radius=r)  # back to start
-
         print("Test movec")
         wait()
-        via = init.copy()
+        pose = rob.get_pose()
+        via = pose.copy()
         via.pos[0] += l
         to = via.copy()
         to.pos[1] += l
-        rob.movec(via, to, acc=a, vel=v, radius=r)
+        rob.movec(via, to, acc=a, vel=v)
 
         print("Sending robot back to original position")
         rob.movej(initj, acc=0.8, vel=0.2)
