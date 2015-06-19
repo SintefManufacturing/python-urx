@@ -40,7 +40,7 @@ class Robot(URRobot):
         """
         self.csys = transform
 
-    def set_orientation(self, orient, acc=0.01, vel=0.01, wait=True):
+    def set_orientation(self, orient, acc=0.01, vel=0.01, wait=True, threshold=0.001):
         """
         set tool orientation using a orientation matric from math3d
         or a orientation vector
@@ -49,9 +49,9 @@ class Robot(URRobot):
             orient = m3d.Orientation(orient)
         trans = self.get_pose()
         trans.orient = orient
-        self.set_pose(trans, acc, vel, wait=wait)
+        self.set_pose(trans, acc, vel, wait=wait, threshold=threshold)
 
-    def translate_tool(self, vect, acc=0.01, vel=0.01, wait=True):
+    def translate_tool(self, vect, acc=0.01, vel=0.01, wait=True, threshold=0.001):
         """
         move tool in tool coordinate, keeping orientation
         """
@@ -59,7 +59,7 @@ class Robot(URRobot):
         if not isinstance(vect, m3d.Vector):
             vect = m3d.Vector(vect)
         t.pos += vect
-        return self.add_pose_tool(t, acc, vel, wait=wait)
+        return self.add_pose_tool(t, acc, vel, wait=wait, threshold=threshold)
 
     def back(self, z=0.05, acc=0.01, vel=0.01):
         """
@@ -67,27 +67,27 @@ class Robot(URRobot):
         """
         self.translate_tool((0, 0, -z), acc=acc, vel=vel)
 
-    def set_pos(self, vect, acc=0.01, vel=0.01, wait=True):
+    def set_pos(self, vect, acc=0.01, vel=0.01, wait=True, threshold=0.001):
         """
         set tool to given pos, keeping constant orientation
         """
         if not isinstance(vect, m3d.Vector):
             vect = m3d.Vector(vect)
         trans = m3d.Transform(self.get_orientation(), m3d.Vector(vect))
-        return self.set_pose(trans, acc, vel, wait=wait)
+        return self.set_pose(trans, acc, vel, wait=wait, threshold=threshold)
 
-    def movec(self, pose_via, pose_to, acc=0.01, vel=0.01, wait=True):
+    def movec(self, pose_via, pose_to, acc=0.01, vel=0.01, wait=True, threshold=0.001):
         """
         Move Circular: Move to position (circular in tool-space)
         see UR documentation
         """
         pose_via = self.csys * m3d.Transform(pose_via)
         pose_to = self.csys * m3d.Transform(pose_to)
-        pose = URRobot.movec(self, pose_via.pose_vector, pose_to.pose_vector, acc=acc, vel=vel, wait=wait)
+        pose = URRobot.movec(self, pose_via.pose_vector, pose_to.pose_vector, acc=acc, vel=vel, wait=wait, threshold=threshold)
         if pose is not None:
             return self.csys.inverse * m3d.Transform(pose)
 
-    def set_pose(self, trans, acc=0.01, vel=0.01, wait=True, command="movel"):
+    def set_pose(self, trans, acc=0.01, vel=0.01, wait=True, command="movel", threshold=0.001):
         """
         move tcp to point and orientation defined by a transformation
         UR robots have several move commands, by default movel is used but it can be changed
@@ -95,23 +95,23 @@ class Robot(URRobot):
         """
         self.logger.debug("Setting pose to %s", trans.pose_vector)
         t = self.csys * trans
-        pose = URRobot.movex(self, command, t.pose_vector, acc=acc, vel=vel, wait=wait)
+        pose = URRobot.movex(self, command, t.pose_vector, acc=acc, vel=vel, wait=wait, threshold=threshold)
         if pose is not None:
             return self.csys.inverse * m3d.Transform(pose)
 
-    def add_pose_base(self, trans, acc=0.01, vel=0.01, wait=True, command="movel"):
+    def add_pose_base(self, trans, acc=0.01, vel=0.01, wait=True, command="movel", threshold=0.001):
         """
         Add transform expressed in base coordinate
         """
         pose = self.get_pose()
-        return self.set_pose(trans * pose, acc, vel, wait=wait, command=command)
+        return self.set_pose(trans * pose, acc, vel, wait=wait, command=command, threshold=threshold)
 
-    def add_pose_tool(self, trans, acc=0.01, vel=0.01, wait=True, command="movel"):
+    def add_pose_tool(self, trans, acc=0.01, vel=0.01, wait=True, command="movel", threshold=0.001):
         """
         Add transform expressed in tool coordinate
         """
         pose = self.get_pose()
-        return self.set_pose(pose * trans, acc, vel, wait=wait, command=command)
+        return self.set_pose(pose * trans, acc, vel, wait=wait, command=command, threshold=threshold)
 
     def get_pose(self, wait=False, _log=True):
         """
@@ -155,18 +155,18 @@ class Robot(URRobot):
         w = self.csys.orient * pose.orient * m3d.Vector(velocities[3:])
         URRobot.speedl(self, np.concatenate((v.array, w.array)), acc, min_time)
 
-    def movex(self, command, pose, acc=0.01, vel=0.01, wait=True, relative=False):
+    def movex(self, command, pose, acc=0.01, vel=0.01, wait=True, relative=False, threshold=0.001):
         """
         Send a move command to the robot. since UR robotene have several methods this one
         sends whatever is defined in 'command' string
         """
         t = m3d.Transform(pose)
         if relative:
-            return self.add_pose_base(t, acc, vel, wait=wait, command=command)
+            return self.add_pose_base(t, acc, vel, wait=wait, command=command, threshold=threshold)
         else:
-            return self.set_pose(t, acc, vel, wait=wait, command=command)
+            return self.set_pose(t, acc, vel, wait=wait, command=command, threshold=threshold)
 
-    def movexs(self, command, pose_list, acc=0.01, vel=0.01, radius=0.01, wait=True):
+    def movexs(self, command, pose_list, acc=0.01, vel=0.01, radius=0.01, wait=True, threshold=0.001):
         """
         Concatenate several movex commands and applies a blending radius
         pose_list is a list of pose.
@@ -178,17 +178,17 @@ class Robot(URRobot):
             t = self.csys * m3d.Transform(pose)
             pose = t.pose_vector
             new_poses.append(pose)
-        return URRobot.movexs(self, command, new_poses, acc, vel, radius, wait=wait)
+        return URRobot.movexs(self, command, new_poses, acc, vel, radius, wait=wait, threshold=threshold)
 
-    def movel_tool(self, pose, acc=0.01, vel=0.01, wait=True):
+    def movel_tool(self, pose, acc=0.01, vel=0.01, wait=True, threshold=0.001):
         """
         move linear to given pose in tool coordinate
         """
-        return self.movex_tool("movel", pose, acc=acc, vel=vel, wait=wait)
+        return self.movex_tool("movel", pose, acc=acc, vel=vel, wait=wait, threshold=threshold)
 
-    def movex_tool(self, command, pose, acc=0.01, vel=0.01, wait=True):
+    def movex_tool(self, command, pose, acc=0.01, vel=0.01, wait=True, threshold=0.001):
         t = m3d.Transform(pose)
-        self.add_pose_tool(t, acc, vel, wait=wait, command=command)
+        self.add_pose_tool(t, acc, vel, wait=wait, command=command, threshold=threshold)
 
     def getl(self, wait=False, _log=True):
         """
