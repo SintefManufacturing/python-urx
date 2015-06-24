@@ -185,31 +185,44 @@ class URRobot(object):
         prog = "set_tool_voltage(%s)" % (val)
         self.send_program(prog)
 
-    def _wait_for_move(self, target, threshold=0.001, timeout=2):
+    def _wait_for_move(self, target, threshold=None, timeout=5, joints=False):
         """
         wait for a move to complete. Unfortunately there is no good way to know when a move has finished
         so for every received data from robot we compute a dist equivalent and when it is lower than
         'threshold' we return.
-        if threshold is not reached within timeout, and exceptino is raised
+        if threshold is not reached within timeout, an exception is raised
         """
         self.logger.debug("Waiting for move completion using threshold %s and target %s", threshold, target)
+        start_dist = self._get_dist(target, joints)
+        if threshold is None:
+            threshold = start_dist * 0.8
+            if threshold < 0.001: # roboten precision is limited
+                threshold = 0.001
+            self.logger.debug("No threshold set, setting it to %s", threshold)
         count = 0
         while True:
             if not self.is_running():
                 raise RobotException("Robot stopped")
-            dist = self._get_dist(target)
+            dist = self._get_dist(target, joints)
             self.logger.debug("distance to target is: %s, target dist is %s", dist, threshold)
-            if self.secmon.is_program_running():
+            if not self.secmon.is_program_running():
+                if dist < threshold:
+                    self.logger.debug("we are threshold(%s) close to target, move has ended", threshold)
+                    return
+                count += 1
+                if count > timeout * 10:
+                    raise RobotException("Goal not reached but no program has been running for {} seconds. dist is {}, threshold is {}, target is {}, current pose is {}".format(timeout, dist, threshold, target, URRobot.getl(self)))
+            else:
                 count = 0
-                continue
-            if dist < threshold:
-                self.logger.debug("move has ended")
-                return
-            count += 1
-            if count > timeout * 10:
-                raise RobotException("Goal not reached but no program has been running for {} seconds. dist is {}, target is {}, current pose is {}".format(timeout, dist, target, URRobot.getl(self)))
 
-    def _get_dist(self, target):
+    def _get_dist(self, target, joints=False):
+        if joints:
+            return self._get_joints_dist(target)
+        else:
+            return self._get_lin_dist(target)
+
+    def _get_lin_dist(self, target):
+        #FIXME: we have an issue here, it seems sometimes the axis angle received from robot
         pose = URRobot.getl(self, wait=True)
         dist = 0
         for i in range(3):
@@ -224,24 +237,6 @@ class URRobot(object):
         for i in range(6):
             dist += (target[i] - joints[i]) ** 2
         return dist ** 0.5
-
-    def _wait_for_move_joints(self, target, threshold, timeout=2):
-        self.logger.debug("Waiting for joint move completion with threshold %s and target %s", threshold, target)
-        count = 0
-        while True:
-            if not self.is_running():
-                raise RobotException("Robot stopped")
-            dist = self._get_joints_dist(target)
-            self.logger.debug("distance to target is: %s, target dist is %s", dist, threshold)
-            if self.secmon.is_program_running():
-                count = 0
-                continue
-            if dist < threshold:
-                self.logger.debug("move has ended")
-                return
-            count += 1
-            if count > timeout * 10:
-                raise RobotException("Goal not reached but no program has been running for {} seconds. dist is {}, target is {}, current pose is {}".format(timeout, dist, target, URRobot.getl(self)))
 
     def getj(self, wait=False):
         """
@@ -269,7 +264,7 @@ class URRobot(object):
         """
         return self.speedx("speedj", velocities, acc, min_time)
 
-    def movej(self, joints, acc=0.1, vel=0.05, wait=True, relative=False, threshold=0.001):
+    def movej(self, joints, acc=0.1, vel=0.05, wait=True, relative=False, threshold=None):
         """
         move in joint space
         """
@@ -279,22 +274,22 @@ class URRobot(object):
         prog = self._format_move("movej", joints, acc, vel)
         self.send_program(prog)
         if wait:
-            self._wait_for_move_joints(joints[:6], threshold=threshold)
+            self._wait_for_move(joints[:6], threshold=threshold, joints=True)
             return self.getj()
 
-    def movel(self, tpose, acc=0.01, vel=0.01, wait=True, relative=False, threshold=0.001):
+    def movel(self, tpose, acc=0.01, vel=0.01, wait=True, relative=False, threshold=None):
         """
         Send a movel command to the robot. See URScript documentation.
         """
         return self.movex("movel", tpose, acc=acc, vel=vel, wait=wait, relative=relative, threshold=threshold)
 
-    def movep(self, tpose, acc=0.01, vel=0.01, wait=True, relative=False, threshold=0.001):
+    def movep(self, tpose, acc=0.01, vel=0.01, wait=True, relative=False, threshold=None):
         """
         Send a movep command to the robot. See URScript documentation.
         """
         return self.movex("movep", tpose, acc=acc, vel=vel, wait=wait, relative=relative, threshold=threshold)
 
-    def servoc(self, tpose, acc=0.01, vel=0.01, wait=True, relative=False, threshold=0.001):
+    def servoc(self, tpose, acc=0.01, vel=0.01, wait=True, relative=False, threshold=None):
         """
         Send a servoc command to the robot. See URScript documentation.
         """
@@ -307,7 +302,7 @@ class URRobot(object):
         tpose.append(radius)
         return "{}({}[{},{},{},{},{},{}], a={}, v={}, r={})".format(command, prefix, *tpose)
 
-    def movex(self, command, tpose, acc=0.01, vel=0.01, wait=True, relative=False, threshold=0.001):
+    def movex(self, command, tpose, acc=0.01, vel=0.01, wait=True, relative=False, threshold=None):
         """
         Send a move command to the robot. since UR robotene have several methods this one
         sends whatever is defined in 'command' string
@@ -332,7 +327,7 @@ class URRobot(object):
             self.logger.debug("Received pose from robot: %s", pose)
         return pose
 
-    def movec(self, pose_via, pose_to, acc=0.01, vel=0.01, wait=True, threshold=0.001):
+    def movec(self, pose_via, pose_to, acc=0.01, vel=0.01, wait=True, threshold=None):
         """
         Move Circular: Move to position (circular in tool-space)
         see UR documentation
@@ -345,7 +340,7 @@ class URRobot(object):
             self._wait_for_move(pose_to, threshold=threshold)
             return self.getl()
 
-    def movels(self, pose_list, acc=0.01, vel=0.01, radius=0.01, wait=True, threshold=0.001):
+    def movels(self, pose_list, acc=0.01, vel=0.01, radius=0.01, wait=True, threshold=None):
         """
         Concatenate several movel commands and applies a blending radius
         pose_list is a list of pose.
@@ -354,7 +349,7 @@ class URRobot(object):
         """
         return self.movexs("movel", pose_list, acc, vel, radius, wait, threshold=threshold)
 
-    def movexs(self, command, pose_list, acc=0.01, vel=0.01, radius=0.01, wait=True, threshold=0.001):
+    def movexs(self, command, pose_list, acc=0.01, vel=0.01, radius=0.01, wait=True, threshold=None):
         """
         Concatenate several movex commands and applies a blending radius
         pose_list is a list of pose.
