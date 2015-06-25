@@ -26,7 +26,7 @@ class Robot(URRobot):
         URRobot.__init__(self, host, use_rt)
         self.csys = m3d.Transform()
 
-    def _get_lin_dist2(self, target):
+    def _get_lin_dist(self, target):
         pose = URRobot.getl(self, wait=True)
         target = m3d.Transform(target)
         pose = m3d.Transform(pose)
