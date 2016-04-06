@@ -1,16 +1,14 @@
 """
 This file contains 2 classes:
     - ParseUtils containing utilies to parse data from UR robot
-    - SecondaryMonitor, a class opening a socket to the robot and with methods to access data and send programs to the robot
+    - SecondaryMonitor, a class opening a socket to the robot and with methods to 
+            access data and send programs to the robot
 Both use data from the secondary port of the URRobot.
-Only the last connected socket on 3001 is the primary client !!!! So do not rely on it unless you know no other client is running (Hint the UR java interface is a client...)
+Only the last connected socket on 3001 is the primary client !!!! 
+So do not rely on it unless you know no other client is running (Hint the UR java interface is a client...)
 http://support.universal-robots.com/Technical/PrimaryAndSecondaryClientInterface
 """
 
-__author__ = "Olivier Roulet-Dubonnet"
-__copyright__ = "Copyright 2011-2013, Sintef Raufoss Manufacturing"
-__credits__ = ["Olivier Roulet-Dubonnet"]
-__license__ = "GPLv3"
 
 from threading import Thread, Condition, Lock
 import logging
@@ -19,11 +17,17 @@ import socket
 from copy import copy
 import time
 
+__author__ = "Olivier Roulet-Dubonnet"
+__copyright__ = "Copyright 2011-2013, Sintef Raufoss Manufacturing"
+__credits__ = ["Olivier Roulet-Dubonnet"]
+__license__ = "GPLv3"
+
 
 class ParsingException(Exception):
 
     def __init__(self, *args):
         Exception.__init__(self, *args)
+
 
 class Program(object):
     def __init__(self, prog):
@@ -162,7 +166,7 @@ class ParserUtils(object):
         """
         read first 5 bytes and return complete packet
         """
-        if not len(data) >= 5:
+        if len(data) < 5:
             raise ParsingException("Packet size %s smaller than header size (5 bytes)" % len(data))
         else:
             psize, ptype = self.get_header(data)
@@ -186,8 +190,8 @@ class ParserUtils(object):
                     data = data[1:]
                     counter += 1
                     if counter > limit:
-                        self.logger.warn("tried %s times to find a packet in data, advertised packet size: %s, type: %s", counter, psize, ptype)
-                        self.logger.warn("Data length: %s", len(data))
+                        self.logger.warning("tried %s times to find a packet in data, advertised packet size: %s, type: %s", counter, psize, ptype)
+                        self.logger.warning("Data length: %s", len(data))
                         limit = limit * 10
                 elif len(data) >= psize:
                     self.logger.debug("Got packet with size %s and type %s", psize, ptype)
@@ -268,11 +272,11 @@ class SecondaryMonitor(Thread):
                 with self._dictLock:
                     self._dict = tmpdict
             except ParsingException as ex:
-                self.logger.warn("Error parsing one packet from urrobot: " + str(ex))
+                self.logger.warning("Error parsing one packet from urrobot: %s", ex)
                 continue
 
             if "RobotModeData" not in self._dict:
-                self.logger.warn("Got a packet from robot without RobotModeData, strange ...")
+                self.logger.warning("Got a packet from robot without RobotModeData, strange ...")
                 continue
 
             self.lastpacket_timestamp = time.time()
@@ -282,11 +286,11 @@ class SecondaryMonitor(Thread):
                 rmode = 7
 
             if self._dict["RobotModeData"]["robotMode"] == rmode \
-                    and self._dict["RobotModeData"]["isRealRobotEnabled"] == True \
-                    and self._dict["RobotModeData"]["isEmergencyStopped"] == False \
-                    and self._dict["RobotModeData"]["isSecurityStopped"] == False \
-                    and self._dict["RobotModeData"]["isRobotConnected"] == True \
-                    and self._dict["RobotModeData"]["isPowerOnRobot"] == True:
+                    and self._dict["RobotModeData"]["isRealRobotEnabled"] is True \
+                    and self._dict["RobotModeData"]["isEmergencyStopped"] is False \
+                    and self._dict["RobotModeData"]["isSecurityStopped"] is False \
+                    and self._dict["RobotModeData"]["isRobotConnected"] is True \
+                    and self._dict["RobotModeData"]["isPowerOnRobot"] is True:
                 self.running = True
             else:
                 if self.running:

@@ -4,14 +4,15 @@ DOC LINK
 http://support.universal-robots.com/URRobot/RemoteAccess
 """
 
-__author__ = "Olivier Roulet-Dubonnet"
-__copyright__ = "Copyright 2011-2015, Sintef Raufoss Manufacturing"
-__license__ = "GPLv3"
 
 import math3d as m3d
 import numpy as np
 
-from urx.urrobot import URRobot 
+from urx.urrobot import URRobot
+
+__author__ = "Olivier Roulet-Dubonnet"
+__copyright__ = "Copyright 2011-2016, Sintef Raufoss Manufacturing"
+__license__ = "GPLv3"
 
 
 class Robot(URRobot):
@@ -207,5 +208,60 @@ class Robot(URRobot):
         if isinstance(vector, m3d.Vector):
             vector = vector.list
         return URRobot.set_gravity(self, vector)
+
+    def new_csys_from_pxy(self):
+        """
+        Return new coordinate system from three points: Origin, X, Y
+        based on math3d: Transform.new_from_xyp
+        """
+        print("A new coordinate system will be defined from the next three points")
+        print("Firs point is origin, second X, third Y")
+        print("Set it as a new reference by calling myrobot.set_csys(new_csys)")
+        input("Move to first point and click Enter")
+        # we do not use get_pose so we avoid rounding values
+        p0 = URRobot.getl(self)
+        p0 = m3d.Vector(p0[:3])
+        input("Move to second point and click Enter")
+        p1 = URRobot.getl(self)
+        p1 = m3d.Vector(p1[:3])
+        input("Move to second point and click Enter")
+        p2 = URRobot.getl(self)
+        p2 = m3d.Vector(p2[:3])
+        return m3d.Transform.new_from_xyp(p1 - p0, p2 - p0, p0)
+    
+    @property
+    def x(self):
+        return self.get_pos().x
+
+    @x.setter
+    def x(self, val):
+        p = self.get_pos()
+        p.x = val
+        self.set_pos(p)
+    @property
+    def y(self):
+        return self.get_pos().y
+
+    @y.setter
+    def y(self, val):
+        p = self.get_pos()
+        p.y = val
+        self.set_pos(p)
+
+    @property
+    def z(self):
+        return self.get_pos().z
+
+    @z.setter
+    def z(self, val):
+        p = self.get_pos()
+        p.z = val
+        self.set_pos(p)
+
+
+
+
+
+
 
 
