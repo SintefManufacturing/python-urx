@@ -3,7 +3,7 @@ from distutils.command.install_data import install_data
 
 
 setup (name = "urx", 
-        version = "0.9.3",
+        version = "0.9.4",
         description = "Python library to control an UR robot",
         author = "Olivier Roulet-Dubonnet",
         author_email = "olivier.roulet@gmail.com",

@@ -171,6 +171,12 @@ class URRobot(object):
         """
         return self.secmon.get_digital_out(val, wait=wait)
 
+    def get_digital_out_bits(self, wait=False):
+        """
+        get digital output as a byte
+        """
+        return self.secmon.get_digital_out_bits(wait=wait)
+
     def set_analog_out(self, output, val):
         """
         set analog output, val is a float

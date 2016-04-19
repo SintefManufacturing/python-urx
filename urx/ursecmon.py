@@ -364,6 +364,12 @@ class SecondaryMonitor(Thread):
         else:
             return 0
 
+    def get_digital_out_bits(self, wait=False):
+        if wait:
+            self.wait()
+        with self._dictLock:
+            return self._dict["MasterBoardData"]["digitalOutputBits"]
+
     def get_digital_in(self, nb, wait=False):
         if wait:
             self.wait()
@@ -375,17 +381,17 @@ class SecondaryMonitor(Thread):
         else:
             return 0
 
-    def get_analog_in(self, nb, wait=False):
-        if wait:
-            self.wait()
-        with self._dictLock:
-            return self._dict["MasterBoardData"]["analogInput" + str(nb)]
-
     def get_digital_in_bits(self, wait=False):
         if wait:
             self.wait()
         with self._dictLock:
             return self._dict["MasterBoardData"]["digitalInputBits"]
+
+    def get_analog_in(self, nb, wait=False):
+        if wait:
+            self.wait()
+        with self._dictLock:
+            return self._dict["MasterBoardData"]["analogInput" + str(nb)]
 
     def get_analog_inputs(self, wait=False):
         if wait:

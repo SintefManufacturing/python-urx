@@ -209,13 +209,13 @@ class Robot(URRobot):
             vector = vector.list
         return URRobot.set_gravity(self, vector)
 
-    def new_csys_from_pxy(self):
+    def new_csys_from_xpy(self):
         """
-        Return new coordinate system from three points: Origin, X, Y
+        Return new coordinate system from three points: X, Origin, Y
         based on math3d: Transform.new_from_xyp
         """
         print("A new coordinate system will be defined from the next three points")
-        print("Firs point is origin, second X, third Y")
+        print("Firs point is X, second Origin, third Y")
         print("Set it as a new reference by calling myrobot.set_csys(new_csys)")
         input("Move to first point and click Enter")
         # we do not use get_pose so we avoid rounding values
