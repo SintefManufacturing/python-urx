@@ -4,14 +4,14 @@ Documentation from universal robots:
 http://support.universal-robots.com/URRobot/RemoteAccess
 """
 
-__author__ = "Olivier Roulet-Dubonnet"
-__copyright__ = "Copyright 2011-2015, Sintef Raufoss Manufacturing"
-__license__ = "GPLv3"
-
 import logging
 
 from urx import urrtmon
 from urx import ursecmon
+
+__author__ = "Olivier Roulet-Dubonnet"
+__copyright__ = "Copyright 2011-2015, Sintef Raufoss Manufacturing"
+__license__ = "GPLv3"
 
 
 class RobotException(Exception):

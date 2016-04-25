@@ -158,8 +158,8 @@ class Robot(URRobot):
         move at given velocities in tool csys until minimum min_time seconds
         """
         pose = self.get_pose()
-        v = self.csys.orient * pose.orient * m3d.Vector(velocities[:3])
-        w = self.csys.orient * pose.orient * m3d.Vector(velocities[3:])
+        v = pose.orient * m3d.Vector(velocities[:3])
+        w = pose.orient * m3d.Vector(velocities[3:])
         URRobot.speedl(self, np.concatenate((v.array, w.array)), acc, min_time)
 
     def movex(self, command, pose, acc=0.01, vel=0.01, wait=True, relative=False, threshold=None):
@@ -219,16 +219,16 @@ class Robot(URRobot):
         print("Set it as a new reference by calling myrobot.set_csys(new_csys)")
         input("Move to first point and click Enter")
         # we do not use get_pose so we avoid rounding values
-        p0 = URRobot.getl(self)
-        p0 = m3d.Vector(p0[:3])
+        pose = URRobot.getl(self)
+        p0 = m3d.Vector(pose[:3])
         input("Move to second point and click Enter")
-        p1 = URRobot.getl(self)
-        p1 = m3d.Vector(p1[:3])
+        pose = URRobot.getl(self)
+        p1 = m3d.Vector(pose[:3])
         input("Move to second point and click Enter")
-        p2 = URRobot.getl(self)
-        p2 = m3d.Vector(p2[:3])
+        pose = URRobot.getl(self)
+        p2 = m3d.Vector(pose[:3])
         return m3d.Transform.new_from_xyp(p1 - p0, p2 - p0, p0)
-    
+
     @property
     def x(self):
         return self.get_pos().x
@@ -238,6 +238,7 @@ class Robot(URRobot):
         p = self.get_pos()
         p.x = val
         self.set_pos(p)
+
     @property
     def y(self):
         return self.get_pos().y
@@ -257,6 +258,99 @@ class Robot(URRobot):
         p = self.get_pos()
         p.z = val
         self.set_pos(p)
+
+    @property
+    def rx(self):
+        p = self.getl()
+        return p[3]
+
+    @rx.setter
+    def rx(self, val):
+        p = self.getl()
+        p[3] = val
+        self.movel(p)
+
+    @property
+    def ry(self):
+        p = self.getl()
+        return p[4]
+
+    @ry.setter
+    def ry(self, val):
+        p = self.getl()
+        p[4] = val
+        self.movel(p)
+
+    @property
+    def rz(self):
+        p = self.getl()
+        return p[5]
+
+    @rz.setter
+    def rz(self, val):
+        p = self.getl()
+        p[5] = val
+        self.movel(p)
+
+    @property
+    def x_t(self):
+        return 0
+
+    @x_t.setter
+    def x_t(self, val):
+        t = m3d.Transform()
+        t.pos.x += val
+        self.add_pose_tool(t)
+
+    @property
+    def y_t(self):
+        return 0
+
+    @y_t.setter
+    def y_t(self, val):
+        t = m3d.Transform()
+        t.pos.y += val
+        self.add_pose_tool(t)
+
+    @property
+    def z_t(self):
+        return 0
+
+    @z_t.setter
+    def z_t(self, val):
+        t = m3d.Transform()
+        t.pos.z += val
+        self.add_pose_tool(t)
+
+    @property
+    def rx_t(self):
+        return 0
+
+    @rx_t.setter
+    def rx_t(self, val):
+        t = m3d.Transform()
+        t.orient.rotate_xb(val)
+        self.add_pose_tool(t)
+
+    @property
+    def ry_t(self):
+        return 0
+
+    @ry_t.setter
+    def ry_t(self, val):
+        t = m3d.Transform()
+        t.orient.rotate_yb(val)
+        self.add_pose_tool(t)
+
+    @property
+    def rz_t(self):
+        return 0
+
+    @rz_t.setter
+    def rz_t(self, val):
+        t = m3d.Transform()
+        t.orient.rotate_zb(val)
+        self.add_pose_tool(t)
 
 
 
