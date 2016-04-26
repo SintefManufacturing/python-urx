@@ -1,23 +1,15 @@
 
-urx is a python library to control a robot from 'Universal robot'. 
-It is published under the GPL license and comes with absolutely no
-guarantee, althoug it has been used in many application with several
-version of UR5 and UR10 robots.
+urx is a python library to control a robot from 'Universal robot'. It is published under the GPL license and comes with absolutely no guarantee, althoug it has been used in many application with several version of UR5 and UR10 robots.
 
-It is meant as an easy to use module for pick and place operations,
-although it has been used for welding and other sensor based applications
- that do not require high update rate.
+It is meant as an easy to use module for pick and place operations, although it has been used for welding and other sensor based applications that do not require high update rate.
 
-Both the 'secondary port' interface and the real-time/matlab interface of the
- UR controller are used. urx can optionally use the python-math3d
- https://launchpad.net/pymath3d library to receive and send transformation
- matrices to the robot urx is known to work with all release robots from Universal Robot.
+Both the 'secondary port' interface and the real-time/matlab interface of the UR controller are used. urx can optionally use the [python-math3d](https://launchpad.net/pymath3d) library to receive and send transformation matrices to the robot urx is known to work with all release robots from Universal Robot.
 
-urx was primarily developed by Olivier Roulet-Dubonnet for Sintef Raufoss Manufacturing
- and : http://www.sintef.no/manufacturing/
+urx was primarily developed by [Olivier Roulet-Dubonnet](https://github.com/oroulet) for [Sintef Raufoss Manufacturing](http://www.sintef.no/manufacturing/)
 
 #Example use:
 
+```python
 import urx
 
 rob = urx.robot("192.168.0.100")
@@ -47,9 +39,11 @@ try:
     robot.movel((0,0,0.1,0,0,0), relative=True)
 except RobotError, ex:
     print "Robot could not execute move (emergency stop for example), do something", ex
+```
 
 #Development using Transform objects from math3d library:
 
+```python
 robot = Robot("192.168.1.1")
 robot.set_tcp((0,0,0.23,0,0,0)
 robot.csys.orient.rotate_zb(pi/4) #just an example
@@ -64,13 +58,15 @@ robot.set_pose(trans)
 o = robot.get_orientation()
 o.rotate_yb(pi)
 robot.set_orientation(o)
+```
 
 #Robotiq Gripper
 
-urx can also control a Robotiq gripper attached to the UR robot.
+urx can also control a Robotiq gripper attached to the UR robot.  The robotiq class was primarily developed by [Mark Silliman](https://github.com/markwsilliman).
 
 ##Example use:
 
+```python
 import sys
 import urx
 from urx.robotiq_two_finger_gripper import Robotiq_Two_Finger_Gripper
@@ -93,3 +89,4 @@ if __name__ == '__main__':
 	rob.close()
 	print "true"
 	sys.exit()
+```
