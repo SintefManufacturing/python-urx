@@ -49,7 +49,7 @@ class ParserUtils(object):
 
     def __init__(self):
         self.logger = logging.getLogger("ursecmon")
-        self.is_v30 = False
+        self.version = (0, 0)
 
     def parse(self, data):
         """
@@ -66,8 +66,11 @@ class ParserUtils(object):
             elif ptype == 0:
                 # this parses RobotModeData for versions >=3.0 (i.e. 3.0)
                 if psize == 38:
-                    self.is_v30 = True
+                    self.version = (3, 0)
                     allData['RobotModeData'] = self._get_data(pdata, "!IBQ???????BBdd", ("size", "type", "timestamp", "isRobotConnected", "isRealRobotEnabled", "isPowerOnRobot", "isEmergencyStopped", "isSecurityStopped", "isProgramRunning", "isProgramPaused", "robotMode", "controlMode", "speedFraction", "speedScaling"))
+                elif psize == 46:  # It's 46 bytes in 3.2
+                    self.version = (3,2)
+                    allData['RobotModeData'] = self._get_data(pdata, "!IBQ???????BBdd", ("size", "type", "timestamp", "isRobotConnected", "isRealRobotEnabled", "isPowerOnRobot", "isEmergencyStopped", "isSecurityStopped", "isProgramRunning", "isProgramPaused", "robotMode", "controlMode", "speedFraction", "speedScaling", "speedFractionLimit"))
                 else:
                     allData["RobotModeData"] = self._get_data(pdata, "!iBQ???????Bd", ("size", "type", "timestamp", "isRobotConnected", "isRealRobotEnabled", "isPowerOnRobot", "isEmergencyStopped", "isSecurityStopped", "isProgramRunning", "isProgramPaused", "robotMode", "speedFraction"))
             elif ptype == 1:
@@ -78,14 +81,22 @@ class ParserUtils(object):
                 allData["JointData"] = self._get_data(pdata, "!iB dddffffB dddffffB dddffffB dddffffB dddffffB dddffffB", tmpstr)
 
             elif ptype == 4:
-                allData["CartesianInfo"] = self._get_data(pdata, "iBdddddd", ("size", "type", "X", "Y", "Z", "Rx", "Ry", "Rz"))
+                if self.version < (3, 2):
+                    allData["CartesianInfo"] = self._get_data(pdata, "iBdddddd", ("size", "type", "X", "Y", "Z", "Rx", "Ry", "Rz"))
+                else:
+                    allData["CartesianInfo"] = self._get_data(pdata, "iBdddddddddddd", ("size", "type", "X", "Y", "Z", "Rx", "Ry", "Rz", "tcpOffsetX", "tcpOffsetY", "tcpOffsetZ", "tcpOffsetRx", "tcpOffsetRy", "tcpOffsetRz"))
             elif ptype == 5:
                 allData["LaserPointer(OBSOLETE)"] = self._get_data(pdata, "iBddd", ("size", "type"))
             elif ptype == 3:
                 allData["MasterBoardData"] = self._get_data(pdata, "iBhhbbddbbddffffBBb", ("size", "type", "digitalInputBits", "digitalOutputBits", "analogInputRange0", "analogInputRange1", "analogInput0", "analogInput1", "analogInputDomain0", "analogInputDomain1", "analogOutput0", "analogOutput1", "masterBoardTemperature", "robotVoltage48V", "robotCurrent", "masterIOCurrent"))  # , "masterSafetyState" ,"masterOnOffState", "euromap67InterfaceInstalled"   ))
             elif ptype == 2:
                 allData["ToolData"] = self._get_data(pdata, "iBbbddfBffB", ("size", "type", "analoginputRange2", "analoginputRange3", "analogInput2", "analogInput3", "toolVoltage48V", "toolOutputVoltage", "toolCurrent", "toolTemperature", "toolMode"))
-
+            elif ptype == 9:
+                continue  # This package has a length of 53 bytes. It is used internally by Universal Robots software only and should be skipped.
+            elif ptype == 8 and self.version >= (3, 2):
+                allData["AdditionalInfo"] = self._get_data(pdata, "iB??", ("size", "type", "teachButtonPressed", "teachButtonEnabled"))
+            elif ptype == 7 and self.version >= (3, 2):
+                allData["ForceModeData"] = self._get_data(pdata, "iBddddddd", ("size", "type", "x", "y", "z", "rx", "ry", "rz", "robotDexterity"))
             # elif ptype == 8:
                 #allData["varMessage"] = self._get_data(pdata, "!iBQbb iiBAcAc", ("size", "type", "timestamp", "source", "robotMessageType", "code", "argument", "titleSize", "messageTitle", "messageText"))
             # elif ptype == 7:
@@ -280,9 +291,9 @@ class SecondaryMonitor(Thread):
                 continue
 
             self.lastpacket_timestamp = time.time()
-            
+
             rmode = 0
-            if self._parser.is_v30:
+            if self._parser.version >= (3, 0):
                 rmode = 7
 
             if self._dict["RobotModeData"]["robotMode"] == rmode \
