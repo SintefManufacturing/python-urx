@@ -261,36 +261,33 @@ class Robot(URRobot):
 
     @property
     def rx(self):
-        p = self.getl()
-        return p[3]
+        return 0
 
     @rx.setter
     def rx(self, val):
-        p = self.getl()
-        p[3] = val
-        self.movel(p)
+        p = self.get_pose()
+        p.orient.rotate_xb(val)
+        self.set_pose(p)
 
     @property
     def ry(self):
-        p = self.getl()
-        return p[4]
+        return 0
 
     @ry.setter
     def ry(self, val):
-        p = self.getl()
-        p[4] = val
-        self.movel(p)
+        p = self.get_pose()
+        p.orient.rotate_yb(val)
+        self.set_pose(p)
 
     @property
     def rz(self):
-        p = self.getl()
-        return p[5]
+        return 0
 
     @rz.setter
     def rz(self, val):
-        p = self.getl()
-        p[5] = val
-        self.movel(p)
+        p = self.get_pose()
+        p.orient.rotate_zb(val)
+        self.set_pose(p)
 
     @property
     def x_t(self):
