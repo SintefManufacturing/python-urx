@@ -12,7 +12,7 @@ urx was primarily developed by [Olivier Roulet-Dubonnet](https://github.com/orou
 ```python
 import urx
 
-rob = urx.robot("192.168.0.100")
+rob = urx.Robot("192.168.0.100")
 rob.set_tcp((0, 0, 0.1, 0, 0, 0))
 rob.set_payload(2, (0, 0, 0.1))
 rob.movej((1, 2, 3, 4, 5, 6), a, v) 
