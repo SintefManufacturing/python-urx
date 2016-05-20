@@ -227,7 +227,7 @@ class Robot(URRobot):
         input("Move to second point and click Enter")
         pose = URRobot.getl(self)
         p2 = m3d.Vector(pose[:3])
-        return m3d.Transform.new_from_xyp(p1 - p0, p2 - p0, p0)
+        return m3d.Transform.new_from_xyp(p0 - p1, p2 - p1, p1)
 
     @property
     def x(self):
