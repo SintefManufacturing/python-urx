@@ -1,3 +1,4 @@
 docs/_*
 build
 .idea/
+urx/__pycache__/*.pyc
