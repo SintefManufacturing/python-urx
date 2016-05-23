@@ -197,12 +197,16 @@ class Robot(URRobot):
         t = m3d.Transform(pose)
         self.add_pose_tool(t, acc, vel, wait=wait, command=command, threshold=threshold)
 
-    def getl(self, wait=False, _log=True):
+    def getl(self, wait=False, _log=True, roundto=False):
         """
         return current transformation from tcp to current csys
         """
         t = self.get_pose(wait, _log)
-        return t.pose_vector.tolist()
+        pose = t.pose_vector.tolist()
+        if roundto:
+            pose = [round(i, self.max_float_length) for i in pose]
+
+        return pose
 
     def set_gravity(self, vector):
         if isinstance(vector, m3d.Vector):
