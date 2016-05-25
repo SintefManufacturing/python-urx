@@ -214,20 +214,26 @@ class Robot(URRobot):
         Return new coordinate system from three points: X, Origin, Y
         based on math3d: Transform.new_from_xyp
         """
+        # Set coord. sys. to 0
+        self.csys = m3d.Transform()
+
         print("A new coordinate system will be defined from the next three points")
         print("Firs point is X, second Origin, third Y")
         print("Set it as a new reference by calling myrobot.set_csys(new_csys)")
         input("Move to first point and click Enter")
         # we do not use get_pose so we avoid rounding values
         pose = URRobot.getl(self)
+        print("Introduced point defining X: {}".format(pose[:3]))
+        px = m3d.Vector(pose[:3])
+        input("Move to second point and click Enter")
+        pose = URRobot.getl(self)
+        print("Introduced point defining Origo: {}".format(pose[:3]))
         p0 = m3d.Vector(pose[:3])
-        input("Move to second point and click Enter")
+        input("Move to third point and click Enter")
         pose = URRobot.getl(self)
-        p1 = m3d.Vector(pose[:3])
-        input("Move to second point and click Enter")
-        pose = URRobot.getl(self)
-        p2 = m3d.Vector(pose[:3])
-        return m3d.Transform.new_from_xyp(p0 - p1, p2 - p1, p1)
+        print("Introduced point defining Y: {}".format(pose[:3]))
+        py = m3d.Vector(pose[:3])
+        return m3d.Transform.new_from_xyp(px - p0, py - p0, p0)
 
     @property
     def x(self):
