@@ -149,9 +149,13 @@ class Robot(URRobot):
         send command to robot formated like speedl or speedj
         move at given velocities until minimum min_time seconds
         """
-        v = self.csys.orient * m3d.Vector(velocities[:3])
-        w = self.csys.orient * m3d.Vector(velocities[3:])
-        URRobot.speedx(self, command, np.concatenate((v.array, w.array)), acc, min_time)
+        if command != "speedj":
+            v = self.csys.orient * m3d.Vector(velocities[:3])
+            w = self.csys.orient * m3d.Vector(velocities[3:])
+            vels = np.concatenate((v.array, w.array))
+        else:
+            vels = velocities
+        URRobot.speedx(self, command, vels, acc, min_time)
 
     def speedl_tool(self, velocities, acc, min_time):
         """
