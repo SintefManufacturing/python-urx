@@ -193,7 +193,7 @@ class ParserUtils(object):
         returns None if none found
         """
         counter = 0
-        limit = 10
+        limit = 100
         while True:
             if len(data) >= 5:
                 psize, ptype = self.get_header(data)
@@ -241,6 +241,7 @@ class SecondaryMonitor(Thread):
         self.running = False  # True when robot is on and listening
         self._dataEvent = Condition()
         self.lastpacket_timestamp = 0
+        self.simulation = False
 
         self.start()
         self.wait()  # make sure we got some data before someone calls us
@@ -302,6 +303,8 @@ class SecondaryMonitor(Thread):
                     and self._dict["RobotModeData"]["isSecurityStopped"] is False \
                     and self._dict["RobotModeData"]["isRobotConnected"] is True \
                     and self._dict["RobotModeData"]["isPowerOnRobot"] is True:
+                self.running = True
+            elif self.simulation is True:
                 self.running = True
             else:
                 if self.running:
