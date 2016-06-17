@@ -46,7 +46,12 @@ class URRTMonitor(threading.Thread):
         self._timestamp = None
         self._ctrlTimestamp = None
         self._qActual = None
-        self._qTarget = None
+        self._qTarget  = None #Target joint positions
+        self._qdtarget  = None #Target joint velocities
+        self._qddtarget  = None #Target joint accelerations
+        self._current_target  = None #Target joint currents
+        self._moment_target  = None #Target joint moments (torques)
+
         self._tcp = None
         self._tcp_force = None
         self.__recvTime = 0
@@ -157,7 +162,7 @@ class URRTMonitor(threading.Thread):
             # if (self._timestamp - self._last_ts) > 0.010:
             #self.logger.warning("Error the we did not receive a packet for {}s ".format( self._timestamp - self._last_ts))
             #self._last_ts = self._timestamp
-            self._ctrlTimestamp = np.array(unp[0])
+            self._ctrlTimestamp = np.array(unp[0]) #Time elapsed since the controller was started [s]
             if self._last_ctrl_ts != 0 and (
                     self._ctrlTimestamp -
                     self._last_ctrl_ts) > 0.010:
@@ -165,10 +170,19 @@ class URRTMonitor(threading.Thread):
                     "Error the controller failed to send us a packet: time since last packet %s s ", 
                     self._ctrlTimestamp - self._last_ctrl_ts)
             self._last_ctrl_ts = self._ctrlTimestamp
-            self._qActual = np.array(unp[31:37])
-            self._qTarget = np.array(unp[1:7])
-            self._tcp_force = np.array(unp[67:73])
-            self._tcp = np.array(unp[73:79])
+            self._qTarget = np.array(unp[1:7]) #Target joint positions
+            self._qdtarget = np.array(unp[7:13]) #Target joint velocities
+            self._qddtarget = np.array(unp[13:19]) #Target joint accelerations
+            self._current_target = np.array(unp[19:25]) #Target joint currents
+            self._moment_target = np.array(unp[25:31]) #Target joint moments (torques)
+            self._qActual = np.array(unp[31:37]) # Actual joint positions
+            self._qdactual = np.array(unp[37:43]) #Actual joint velocities
+            self._current_actual = np.array(unp[43:49]) #Actual joint currents
+            self._joint_control_output = np.array(unp[49:55]) #Joint control currents
+            self._actual_TCP_pose = np.array(unp[55:61]) #Actual Cartesian coordinates of the tool: (x,y,z,rx,ry,rz), where rx, ry and rz is a rotation vector representation of the tool orientation
+            self._actual_TCP_speed = np.array(unp[61:67]) #Actual speed of the tool given in Cartesian coordinates
+            self._tcp_force = np.array(unp[67:73]) #Generalized forces in the TCP
+            self._tcp = np.array(unp[73:79]) #Target Cartesian coordinates of the tool: (x,y,z,rx,ry,rz), where rx, ry and rz is a rotation vector representation of the tool orientation
 
             if self._csys:
                 with self._csys_lock:
