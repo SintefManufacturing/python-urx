@@ -392,6 +392,7 @@ class URRobot(object):
         self.secmon.close()
         if self.rtmon:
             self.rtmon.stop()
+            self.rtlog.stop()
 
     def set_freedrive(self, val):
         """
@@ -418,6 +419,8 @@ class URRobot(object):
             self.logger.info("Opening real-time monitor socket")
             self.rtmon = urrtmon.URRTMonitor(self.host)  # som information is only available on rt interface
             self.rtmon.start()
+            self.rtlog = urrtmon.URRTlogger(self.rtmon)
+            self.rtlog.start()
         self.rtmon.set_csys(self.csys)
         return self.rtmon
 
