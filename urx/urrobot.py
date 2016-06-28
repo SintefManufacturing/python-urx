@@ -152,17 +152,15 @@ class URRobot(object):
             val = "False"
         self.send_program('set_tool_digital_out(%s, %s)' % (output, val))
 
-    def set_conﬁgurable_digital_out(self, output, val):
+    def set_configurable_digital_out(self, output, val):
         """
-        set conﬁgurable digital output. val is a bool
-        (Don't work yet!!!)
+        set configurable digital output. val is a bool
         """
-        raise Exception("This function is not yet tested and ready") 
         if val in (True, 1):
             val = "True"
         else:
             val = "False"
-        self.send_program('set_conﬁgurable_digital_out(%s, %s)' % (output, val))
+        self.send_program('set_configurable_digital_out(%s, %s)' % (output, val))
 
     def get_analog_inputs(self):
         """
