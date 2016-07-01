@@ -230,8 +230,11 @@ class URRTMonitor(threading.Thread):
             self._tool_output_voltage = unp[134] #Tool output voltage [V]
             self._tool_output_current = unp[135] #Tool current [A]
             self._tcp_force_scalar = unp[136] #TCP force scalar [N]
-#            self._output_bit_registers0_to_31 = unp[137] #General purpose bits
-#            self._output_bit_registers32_to_63 = unp[138] #General purpose bits
+            self._output_bit_registers0_to_31 = unp[137] #General purpose bits
+            self._output_bit_registers32_to_63 = unp[138] #General purpose bits
+            self._output_int_register_X = unp[139:142] #24 general purpose integer registers x[0..23]
+            self._output_double_register_X = unp[142] #24 general purpose double registers x[0..23]
+
 #            self._output_int_register_X = unp[139:163] #24 general purpose integer registers x[0..23]
 #            self._output_double_register_X = unp[163:187] #24 general purpose double registers x[0..23]
             
