@@ -26,7 +26,8 @@ import math3d as m3d
 class URRTMonitor(threading.Thread):
 
     # Struct for revision of the UR controller giving 1024 bytes
-    rtstruct1024 = struct.Struct('>d6d6d6d6d6d6d6d6d18d6d6d6dd6ddi6ii3ddddddd6dQIIIIdddddIIddiddIIid')
+                                                                #? ?           |
+    rtstruct1024 = struct.Struct('>d6d6d6d6d6d6d6d6d18d6d6d6dd6ddi6ii3ddddddd6ddIIIIdddddIIddiddIIid')
     #rtstruct1024 = struct.Struct('>d6d6d6d6d6d6d6d6d18d6d6d6dd6ddi6ii3ddddddd6dQIIIIdddddIIddiddII24i24d')
 
     # Struct for revision of the UR controller giving 692 bytes
