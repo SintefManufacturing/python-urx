@@ -27,7 +27,7 @@ class URRTMonitor(threading.Thread):
 
     # Struct for revision of the UR controller giving 1024 bytes
                                                                 #? ?           |
-    rtstruct1024 = struct.Struct('>d6d6d6d6d6d6d6d6d18d6d6d6dd6ddi6ii3ddddddd6ddIIIIdddddIIddiddIIid')
+    rtstruct1024 = struct.Struct('>d6d6d6d6d6d6d6d6d18d6d6d6dd6ddi6ii3ddddddd6ddIIIIdddddIIddIIddiddII3id')
     #rtstruct1024 = struct.Struct('>d6d6d6d6d6d6d6d6d18d6d6d6dd6ddi6ii3ddddddd6dQIIIIdddddIIddiddII24i24d')
 
     # Struct for revision of the UR controller giving 692 bytes
@@ -153,7 +153,9 @@ class URRTMonitor(threading.Thread):
             'Received header telling that package is %s bytes long', 
             pkgsize)
         payload = self.__recv_bytes(pkgsize - 4)
-        if pkgsize >= 1024:
+        if pkgsize > 1060:
+            print('Hi Li, please send me this number: ' + str(pkgsize))
+        if pkgsize >= 1060:
             unp = self.rtstruct1024.unpack(payload[:self.rtstruct1024.size])
         elif pkgsize >= 692:
             unp = self.rtstruct692.unpack(payload[:self.rtstruct692.size])
@@ -200,38 +202,38 @@ class URRTMonitor(threading.Thread):
             self._joint_mode = np.array(unp[94:100]) #Joint control modes
             self._safety_mode = unp[100] #Safety mode
             self._actual_tool_accelerometer = np.array(unp[101:104]) #Tool x, y and z accelerometer values
-            self._speed_scaling = unp[105] #Speed scaling of the trajectory limiter
-            self._target_speed_fraction = unp[106] #Target speed fraction
-            self._actual_momentum = unp[107] #Norm of Cartesian linear momentum
-            self._actual_main_voltagee = unp[108] #Safety Control Board: Main voltage
-            self._actual_robot_voltage = unp[109] #Safety Control Board: Robot voltage (48V)
-            self._actual_robot_current = unp[110] #Safety Control Board: Robot current
-            self._actual_joint_voltage = np.array(unp[111:117]) #Actual joint voltages
-            self._actual_digital_output_bits = unp[117] #Digital outputs
-            self._runtime_state = unp[118] #Program state
-            self._robot_status_bits = unp[119] #Bits 0-3:  Is power on | Is program running | Is teach button pressed | Is power button pressed
-            self._safety_status_bits = unp[120] #Bits 0-10: Is normal mode | Is reduced mode | | Is protective stopped | Is recovery mode | Is safeguard stopped | Is system emergency stopped | Is robot emergency stopped | Is emergency stopped | Is violation | Is fault | Is stopped due to safety
-            self._analog_io_types = unp[121] #Bits 0-3: analog input 0 | analog input 1 | analog output 0 | analog output 1, {0=current[A], 1=voltage[V]}
-            self._standard_analog_input0 = unp[122] #Standard analog input 0 [A or V]
-            self._standard_analog_input1 = unp[123] #Standard analog input 1 [A or V]
-            self._standard_analog_output0 = unp[124] #Standard analog output 0 [A or V]
-            self._standard_analog_output1 = unp[125] #Standard analog output 1 [A or V]
-            self._io_current = unp[126] #I/O current [A]
-            self._euromap67_input_bits = unp[127] #Euromap67 input bits
-            self._euromap67_output_bits = unp[128] #Euromap67 output bits
-            self._euromap67_24V_voltage = unp[129] #Euromap 24V voltage [V]
-            self._euromap67_24V_current = unp[130] #Euromap 24V current [A]
-            self._tool_mode = unp[131] #Tool mode
-#            self._tool_analog_input_types = unp[132] #Output domain {0=current[A], 1=voltage[V]} - Bits 0-1: tool_analog_input_0 | tool_analog_input_1 
-#            self._tool_analog_input0 = unp[133] #Tool analog input 0 [A or V]
-#            self._tool_analog_input1 = unp[134] #Tool analog input 1 [A or V]
-#            self._tool_output_voltage = unp[135] #Tool output voltage [V]
-#            self._tool_output_current = unp[136] #Tool current [A]
-#            self._tcp_force_scalar = unp[137] #TCP force scalar [N]
-#            self._output_bit_registers0_to_31 = unp[138] #General purpose bits
-#            self._output_bit_registers32_to_63 = unp[139] #General purpose bits
-#            self._output_int_register_X = unp[140:164] #24 general purpose integer registers x[0..23]
-#            self._output_double_register_X = unp[164:188] #24 general purpose double registers x[0..23]
+            self._speed_scaling = unp[104] #Speed scaling of the trajectory limiter
+            self._target_speed_fraction = unp[105] #Target speed fraction
+            self._actual_momentum = unp[106] #Norm of Cartesian linear momentum
+            self._actual_main_voltagee = unp[107] #Safety Control Board: Main voltage
+            self._actual_robot_voltage = unp[108] #Safety Control Board: Robot voltage (48V)
+            self._actual_robot_current = unp[109] #Safety Control Board: Robot current
+            self._actual_joint_voltage = np.array(unp[110:116]) #Actual joint voltages
+            self._actual_digital_output_bits = unp[116] #Digital outputs
+            self._runtime_state = unp[117] #Program state
+            self._robot_status_bits = unp[118] #Bits 0-3:  Is power on | Is program running | Is teach button pressed | Is power button pressed
+            self._safety_status_bits = unp[119] #Bits 0-10: Is normal mode | Is reduced mode | | Is protective stopped | Is recovery mode | Is safeguard stopped | Is system emergency stopped | Is robot emergency stopped | Is emergency stopped | Is violation | Is fault | Is stopped due to safety
+            self._analog_io_types = unp[120] #Bits 0-3: analog input 0 | analog input 1 | analog output 0 | analog output 1, {0=current[A], 1=voltage[V]}
+            self._standard_analog_input0 = unp[121] #Standard analog input 0 [A or V]
+            self._standard_analog_input1 = unp[122] #Standard analog input 1 [A or V]
+            self._standard_analog_output0 = unp[123] #Standard analog output 0 [A or V]
+            self._standard_analog_output1 = unp[124] #Standard analog output 1 [A or V]
+            self._io_current = unp[125] #I/O current [A]
+            self._euromap67_input_bits = unp[126] #Euromap67 input bits
+            self._euromap67_output_bits = unp[127] #Euromap67 output bits
+            self._euromap67_24V_voltage = unp[128] #Euromap 24V voltage [V]
+            self._euromap67_24V_current = unp[129] #Euromap 24V current [A]
+            self._tool_mode = unp[130] #Tool mode
+            self._tool_analog_input_types = unp[131] #Output domain {0=current[A], 1=voltage[V]} - Bits 0-1: tool_analog_input_0 | tool_analog_input_1 
+            self._tool_analog_input0 = unp[132] #Tool analog input 0 [A or V]
+            self._tool_analog_input1 = unp[133] #Tool analog input 1 [A or V]
+            self._tool_output_voltage = unp[134] #Tool output voltage [V]
+            self._tool_output_current = unp[135] #Tool current [A]
+            self._tcp_force_scalar = unp[136] #TCP force scalar [N]
+#            self._output_bit_registers0_to_31 = unp[137] #General purpose bits
+#            self._output_bit_registers32_to_63 = unp[138] #General purpose bits
+#            self._output_int_register_X = unp[139:163] #24 general purpose integer registers x[0..23]
+#            self._output_double_register_X = unp[163:187] #24 general purpose double registers x[0..23]
             
             if self._csys:
                 with self._csys_lock:
