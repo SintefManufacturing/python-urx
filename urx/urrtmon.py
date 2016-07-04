@@ -25,10 +25,8 @@ import math3d as m3d
 
 class URRTMonitor(threading.Thread):
 
-    # Struct for revision of the UR controller giving 1024 bytes
-                                                                #? ?           |
-    rtstruct1024 = struct.Struct('>d6d6d6d6d6d6d6d6d18d6d6d6dd6ddi6ii3ddddddd6ddIIIIdddddIIddIIddiddII3id')
-    #rtstruct1024 = struct.Struct('>d6d6d6d6d6d6d6d6d18d6d6d6dd6ddi6ii3ddddddd6dQIIIIdddddIIddiddII24i24d')
+    # Struct for revision of the UR controller giving 1060 bytes
+    rtstruct1060 = struct.Struct('>132d')
 
     # Struct for revision of the UR controller giving 692 bytes
     rtstruct692 = struct.Struct('>d6d6d6d6d6d6d6d6d18d6d6d6dQ')
@@ -153,10 +151,8 @@ class URRTMonitor(threading.Thread):
             'Received header telling that package is %s bytes long', 
             pkgsize)
         payload = self.__recv_bytes(pkgsize - 4)
-        if pkgsize > 1060:
-            print('Hi Li, please send me this number: ' + str(pkgsize))
         if pkgsize >= 1060:
-            unp = self.rtstruct1024.unpack(payload[:self.rtstruct1024.size])
+            unp = self.rtstruct1060.unpack(payload[:self.rtstruct1060.size])
         elif pkgsize >= 692:
             unp = self.rtstruct692.unpack(payload[:self.rtstruct692.size])
         elif pkgsize >= 540:
@@ -198,45 +194,23 @@ class URRTMonitor(threading.Thread):
             self._actual_digital_input_bits = unp[85] #Current state of the digital inputs.
             self._joint_temperatures = np.array(unp[86:92]) #Temperature of each joint in degrees Celsius
             self._actual_execution_time = unp[92] #Controller real-time thread execution time
-            self._robot_mode = unp[93] #Robot mode
-            self._joint_mode = np.array(unp[94:100]) #Joint control modes
-            self._safety_mode = unp[100] #Safety mode
-            self._actual_tool_accelerometer = np.array(unp[101:104]) #Tool x, y and z accelerometer values
-            self._speed_scaling = unp[104] #Speed scaling of the trajectory limiter
-            self._target_speed_fraction = unp[105] #Target speed fraction
-            self._actual_momentum = unp[106] #Norm of Cartesian linear momentum
-            self._actual_main_voltagee = unp[107] #Safety Control Board: Main voltage
-            self._actual_robot_voltage = unp[108] #Safety Control Board: Robot voltage (48V)
-            self._actual_robot_current = unp[109] #Safety Control Board: Robot current
-            self._actual_joint_voltage = np.array(unp[110:116]) #Actual joint voltages
-            self._actual_digital_output_bits = unp[116] #Digital outputs
-            self._runtime_state = unp[117] #Program state
-            self._robot_status_bits = unp[118] #Bits 0-3:  Is power on | Is program running | Is teach button pressed | Is power button pressed
-            self._safety_status_bits = unp[119] #Bits 0-10: Is normal mode | Is reduced mode | | Is protective stopped | Is recovery mode | Is safeguard stopped | Is system emergency stopped | Is robot emergency stopped | Is emergency stopped | Is violation | Is fault | Is stopped due to safety
-            self._analog_io_types = unp[120] #Bits 0-3: analog input 0 | analog input 1 | analog output 0 | analog output 1, {0=current[A], 1=voltage[V]}
-            self._standard_analog_input0 = unp[121] #Standard analog input 0 [A or V]
-            self._standard_analog_input1 = unp[122] #Standard analog input 1 [A or V]
-            self._standard_analog_output0 = unp[123] #Standard analog output 0 [A or V]
-            self._standard_analog_output1 = unp[124] #Standard analog output 1 [A or V]
-            self._io_current = unp[125] #I/O current [A]
-            self._euromap67_input_bits = unp[126] #Euromap67 input bits
-            self._euromap67_output_bits = unp[127] #Euromap67 output bits
-            self._euromap67_24V_voltage = unp[128] #Euromap 24V voltage [V]
-            self._euromap67_24V_current = unp[129] #Euromap 24V current [A]
-            self._tool_mode = unp[130] #Tool mode
-            self._tool_analog_input_types = unp[131] #Output domain {0=current[A], 1=voltage[V]} - Bits 0-1: tool_analog_input_0 | tool_analog_input_1 
-            self._tool_analog_input0 = unp[132] #Tool analog input 0 [A or V]
-            self._tool_analog_input1 = unp[133] #Tool analog input 1 [A or V]
-            self._tool_output_voltage = unp[134] #Tool output voltage [V]
-            self._tool_output_current = unp[135] #Tool current [A]
-            self._tcp_force_scalar = unp[136] #TCP force scalar [N]
-            self._output_bit_registers0_to_31 = unp[137] #General purpose bits
-            self._output_bit_registers32_to_63 = unp[138] #General purpose bits
-            self._output_int_register_X = unp[139:142] #24 general purpose integer registers x[0..23]
-            self._output_double_register_X = unp[142] #24 general purpose double registers x[0..23]
-
-#            self._output_int_register_X = unp[139:163] #24 general purpose integer registers x[0..23]
-#            self._output_double_register_X = unp[163:187] #24 general purpose double registers x[0..23]
+            self._URTest1 = unp[93] #A value used by Universal Robots software only                                                    
+            self._robot_mode = unp[94] #Robot mode
+            self._joint_mode = np.array(unp[95:101]) #Joint control modes
+            self._safety_mode = unp[101] #Safety mode
+            self._URTest2 = unp[102:108] #Used by Universal Robots software only                                                                                                        
+            self._actual_tool_accelerometer = np.array(unp[108:111]) #Tool x, y and z accelerometer values
+            self._URTest3 = unp[111:117] #Used by Universal Robots software only                                                                                                        
+            self._speed_scaling = unp[117] #Speed scaling of the trajectory limiter
+            self._actual_momentum = unp[118] #Norm of Cartesian linear momentum
+            self._URTest4 = unp[119] #Used by Universal Robots software only                                                                                                        
+            self._URTest5 = unp[120] #Used by Universal Robots software only                                                                                                        
+            self._actual_main_voltagee = unp[121] #Masterboard: Main voltage
+            self._actual_robot_voltage = unp[122] #Masterboard: Robot voltage (48V)
+            self._actual_robot_current = unp[123] #Masterboard: Robot current
+            self._actual_joint_voltage = np.array(unp[124:130]) #Actual joint voltages
+            self._actual_digital_output_bits = unp[130] #Digital outputs
+            self._Program_state = unp[131] #Program state
             
             if self._csys:
                 with self._csys_lock:
@@ -332,49 +306,49 @@ class URRTlogger(URRTMonitor, threading.Thread):
          
     def logdata(self):
         self.rtmon.wait()
-        self.dataLog.info('target_q;%s;%s;%s;%s;%s;%s;%s', self.rtmon._ctrlTimestamp, *self.rtmon._qTarget)
-        self.dataLog.info('target_qd;%s;%s;%s;%s;%s;%s;%s', self.rtmon._ctrlTimestamp, *self.rtmon._qdtarget)
-        self.dataLog.info('target_qdd;%s;%s;%s;%s;%s;%s;%s', self.rtmon._ctrlTimestamp, *self.rtmon._qddtarget)
-        self.dataLog.info('target_current;%s;%s;%s;%s;%s;%s;%s', self.rtmon._ctrlTimestamp, *self.rtmon._current_target)
-        self.dataLog.info('target_moment;%s;%s;%s;%s;%s;%s;%s', self.rtmon._ctrlTimestamp, *self.rtmon._moment_target)
-        self.dataLog.info('actual_q;%s;%s;%s;%s;%s;%s;%s', self.rtmon._ctrlTimestamp, *self.rtmon._qActual)
-        self.dataLog.info('actual_qd;%s;%s;%s;%s;%s;%s;%s', self.rtmon._ctrlTimestamp, *self.rtmon._qdactual)
-        self.dataLog.info('actual_current;%s;%s;%s;%s;%s;%s;%s', self.rtmon._ctrlTimestamp, *self.rtmon._current_actual)
-        self.dataLog.info('joint_control_output;%s;%s;%s;%s;%s;%s;%s', self.rtmon._ctrlTimestamp, *self.rtmon._joint_control_output)
-        self.dataLog.info('actual_TCP_pose;%s;%s;%s;%s;%s;%s;%s', self.rtmon._ctrlTimestamp, *self.rtmon._actual_TCP_pose)
-        self.dataLog.info('actual_TCP_speed;%s;%s;%s;%s;%s;%s;%s', self.rtmon._ctrlTimestamp, *self.rtmon._actual_TCP_speed)
-        self.dataLog.info('actual_TCP_force;%s;%s;%s;%s;%s;%s;%s', self.rtmon._ctrlTimestamp, *self.rtmon._tcp_force)
-        self.dataLog.info('target_TCP_speed;%s;%s;%s;%s;%s;%s;%s', self.rtmon._ctrlTimestamp, *self.rtmon._target_TCP_speed)
-        self.dataLog.info('actual_digital_input_bits;%s;%s', self.rtmon._ctrlTimestamp, self.rtmon._actual_digital_input_bits)
-        self.dataLog.info('joint_temperatures;%s;%s;%s;%s;%s;%s;%s', self.rtmon._ctrlTimestamp, *self.rtmon._joint_temperatures)
-        self.dataLog.info('actual_execution_time;%s;%s', self.rtmon._ctrlTimestamp, self.rtmon._actual_execution_time)
-        self.dataLog.info('robot_mode;%s;%s', self.rtmon._ctrlTimestamp, self.rtmon._robot_mode)
-        self.dataLog.info('joint_mode;%s;%s;%s;%s;%s;%s;%s', self.rtmon._ctrlTimestamp, *self.rtmon._joint_mode)
-        self.dataLog.info('safety_mode;%s;%s', self.rtmon._ctrlTimestamp, self.rtmon._safety_mode)
-        self.dataLog.info('actual_tool_accelerometer;%s;%s;%s;%s', self.rtmon._ctrlTimestamp, *self.rtmon._actual_tool_accelerometer)
-        self.dataLog.info('speed_scaling;%s;%s', self.rtmon._ctrlTimestamp, self.rtmon._speed_scaling)
-        self.dataLog.info('target_speed_fraction;%s;%s', self.rtmon._ctrlTimestamp, self.rtmon._target_speed_fraction)
-        self.dataLog.info('actual_momentum;%s;%s', self.rtmon._ctrlTimestamp, self.rtmon._actual_momentum)
-        self.dataLog.info('actual_main_voltage;%s;%s', self.rtmon._ctrlTimestamp, self.rtmon._actual_main_voltagee)
-        self.dataLog.info('actual_robot_voltage;%s;%s', self.rtmon._ctrlTimestamp, self.rtmon._actual_robot_voltage)
-        self.dataLog.info('actual_robot_current;%s;%s', self.rtmon._ctrlTimestamp, self.rtmon._actual_robot_current)
-        self.dataLog.info('actual_joint_voltage;%s;%s;%s;%s;%s;%s;%s', self.rtmon._ctrlTimestamp, *self.rtmon._actual_joint_voltage)
-        self.dataLog.info('actual_digital_output_bits;%s;%s', self.rtmon._ctrlTimestamp, self.rtmon._actual_digital_output_bits)
-        self.dataLog.info('runtime_state;%s;%s', self.rtmon._ctrlTimestamp, self.rtmon._runtime_state)
-        self.dataLog.info('robot_status_bits;%s;%s', self.rtmon._ctrlTimestamp, self.rtmon._robot_status_bits)
-        self.dataLog.info('safety_status_bits;%s;%s', self.rtmon._ctrlTimestamp, self.rtmon._safety_status_bits)
-        self.dataLog.info('analog_io_types;%s;%s', self.rtmon._ctrlTimestamp, self.rtmon._analog_io_types)
-        self.dataLog.info('standard_analog_input0;%s;%s', self.rtmon._ctrlTimestamp, self.rtmon._standard_analog_input0)
-        self.dataLog.info('standard_analog_input1;%s;%s', self.rtmon._ctrlTimestamp, self.rtmon._standard_analog_input1)
-        self.dataLog.info('standard_analog_output0;%s;%s', self.rtmon._ctrlTimestamp, self.rtmon._standard_analog_output0)
-        self.dataLog.info('standard_analog_output1;%s;%s', self.rtmon._ctrlTimestamp, self.rtmon._standard_analog_output1)
-        self.dataLog.info('io_current;%s;%s', self.rtmon._ctrlTimestamp, self.rtmon._io_current)
-        self.dataLog.info('euromap67_input_bits;%s;%s', self.rtmon._ctrlTimestamp, self.rtmon._euromap67_input_bits)
-        self.dataLog.info('euromap67_output_bits;%s;%s', self.rtmon._ctrlTimestamp, self.rtmon._euromap67_output_bits)
-        self.dataLog.info('euromap67_24V_voltage;%s;%s', self.rtmon._ctrlTimestamp, self.rtmon._euromap67_24V_voltage)
-        self.dataLog.info('euromap67_24V_current;%s;%s', self.rtmon._ctrlTimestamp, self.rtmon._euromap67_24V_current)
-        self.dataLog.info('tool_mode;%s;%s', self.rtmon._ctrlTimestamp, self.rtmon._tool_mode)
-        self.dataLog.info('target_TCP_pose;%s;%s;%s;%s;%s;%s;%s', self.rtmon._ctrlTimestamp, *self.rtmon._tcp)
+#         self.dataLog.info('target_q;%s;%s;%s;%s;%s;%s;%s', self.rtmon._ctrlTimestamp, *self.rtmon._qTarget)
+#         self.dataLog.info('target_qd;%s;%s;%s;%s;%s;%s;%s', self.rtmon._ctrlTimestamp, *self.rtmon._qdtarget)
+#         self.dataLog.info('target_qdd;%s;%s;%s;%s;%s;%s;%s', self.rtmon._ctrlTimestamp, *self.rtmon._qddtarget)
+#         self.dataLog.info('target_current;%s;%s;%s;%s;%s;%s;%s', self.rtmon._ctrlTimestamp, *self.rtmon._current_target)
+#         self.dataLog.info('target_moment;%s;%s;%s;%s;%s;%s;%s', self.rtmon._ctrlTimestamp, *self.rtmon._moment_target)
+#         self.dataLog.info('actual_q;%s;%s;%s;%s;%s;%s;%s', self.rtmon._ctrlTimestamp, *self.rtmon._qActual)
+#         self.dataLog.info('actual_qd;%s;%s;%s;%s;%s;%s;%s', self.rtmon._ctrlTimestamp, *self.rtmon._qdactual)
+#         self.dataLog.info('actual_current;%s;%s;%s;%s;%s;%s;%s', self.rtmon._ctrlTimestamp, *self.rtmon._current_actual)
+#         self.dataLog.info('joint_control_output;%s;%s;%s;%s;%s;%s;%s', self.rtmon._ctrlTimestamp, *self.rtmon._joint_control_output)
+#         self.dataLog.info('actual_TCP_pose;%s;%s;%s;%s;%s;%s;%s', self.rtmon._ctrlTimestamp, *self.rtmon._actual_TCP_pose)
+#         self.dataLog.info('actual_TCP_speed;%s;%s;%s;%s;%s;%s;%s', self.rtmon._ctrlTimestamp, *self.rtmon._actual_TCP_speed)
+#         self.dataLog.info('actual_TCP_force;%s;%s;%s;%s;%s;%s;%s', self.rtmon._ctrlTimestamp, *self.rtmon._tcp_force)
+#         self.dataLog.info('target_TCP_speed;%s;%s;%s;%s;%s;%s;%s', self.rtmon._ctrlTimestamp, *self.rtmon._target_TCP_speed)
+#         self.dataLog.info('actual_digital_input_bits;%s;%s', self.rtmon._ctrlTimestamp, self.rtmon._actual_digital_input_bits)
+#         self.dataLog.info('joint_temperatures;%s;%s;%s;%s;%s;%s;%s', self.rtmon._ctrlTimestamp, *self.rtmon._joint_temperatures)
+#         self.dataLog.info('actual_execution_time;%s;%s', self.rtmon._ctrlTimestamp, self.rtmon._actual_execution_time)
+# #?        self.dataLog.info('robot_mode;%s;%s', self.rtmon._ctrlTimestamp, self.rtmon._robot_mode)
+# #?        self.dataLog.info('joint_mode;%s;%s;%s;%s;%s;%s;%s', self.rtmon._ctrlTimestamp, *self.rtmon._joint_mode)
+# #?        self.dataLog.info('safety_mode;%s;%s', self.rtmon._ctrlTimestamp, self.rtmon._safety_mode)
+# #?        self.dataLog.info('actual_tool_accelerometer;%s;%s;%s;%s', self.rtmon._ctrlTimestamp, *self.rtmon._actual_tool_accelerometer)
+#         self.dataLog.info('speed_scaling;%s;%s', self.rtmon._ctrlTimestamp, self.rtmon._speed_scaling)
+#         self.dataLog.info('target_speed_fraction;%s;%s', self.rtmon._ctrlTimestamp, self.rtmon._target_speed_fraction)
+#         self.dataLog.info('actual_momentum;%s;%s', self.rtmon._ctrlTimestamp, self.rtmon._actual_momentum)
+#         self.dataLog.info('actual_main_voltage;%s;%s', self.rtmon._ctrlTimestamp, self.rtmon._actual_main_voltagee)
+#         self.dataLog.info('actual_robot_voltage;%s;%s', self.rtmon._ctrlTimestamp, self.rtmon._actual_robot_voltage)
+#         self.dataLog.info('actual_robot_current;%s;%s', self.rtmon._ctrlTimestamp, self.rtmon._actual_robot_current)
+#         self.dataLog.info('actual_joint_voltage;%s;%s;%s;%s;%s;%s;%s', self.rtmon._ctrlTimestamp, *self.rtmon._actual_joint_voltage)
+#         self.dataLog.info('actual_digital_output_bits;%s;%s', self.rtmon._ctrlTimestamp, self.rtmon._actual_digital_output_bits)
+#         self.dataLog.info('runtime_state;%s;%s', self.rtmon._ctrlTimestamp, self.rtmon._runtime_state)
+#         self.dataLog.info('robot_status_bits;%s;%s', self.rtmon._ctrlTimestamp, self.rtmon._robot_status_bits)
+#         self.dataLog.info('safety_status_bits;%s;%s', self.rtmon._ctrlTimestamp, self.rtmon._safety_status_bits)
+#         self.dataLog.info('analog_io_types;%s;%s', self.rtmon._ctrlTimestamp, self.rtmon._analog_io_types)
+#         self.dataLog.info('standard_analog_input0;%s;%s', self.rtmon._ctrlTimestamp, self.rtmon._standard_analog_input0)
+#         self.dataLog.info('standard_analog_input1;%s;%s', self.rtmon._ctrlTimestamp, self.rtmon._standard_analog_input1)
+#         self.dataLog.info('standard_analog_output0;%s;%s', self.rtmon._ctrlTimestamp, self.rtmon._standard_analog_output0)
+#         self.dataLog.info('standard_analog_output1;%s;%s', self.rtmon._ctrlTimestamp, self.rtmon._standard_analog_output1)
+#         self.dataLog.info('io_current;%s;%s', self.rtmon._ctrlTimestamp, self.rtmon._io_current)
+#         self.dataLog.info('euromap67_input_bits;%s;%s', self.rtmon._ctrlTimestamp, self.rtmon._euromap67_input_bits)
+#         self.dataLog.info('euromap67_output_bits;%s;%s', self.rtmon._ctrlTimestamp, self.rtmon._euromap67_output_bits)
+#         self.dataLog.info('euromap67_24V_voltage;%s;%s', self.rtmon._ctrlTimestamp, self.rtmon._euromap67_24V_voltage)
+#         self.dataLog.info('euromap67_24V_current;%s;%s', self.rtmon._ctrlTimestamp, self.rtmon._euromap67_24V_current)
+#         self.dataLog.info('tool_mode;%s;%s', self.rtmon._ctrlTimestamp, self.rtmon._tool_mode)
+#         self.dataLog.info('target_TCP_pose;%s;%s;%s;%s;%s;%s;%s', self.rtmon._ctrlTimestamp, *self.rtmon._tcp)
          
     def stop(self):
         self._stop_event = True
