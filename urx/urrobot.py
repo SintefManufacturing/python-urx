@@ -258,18 +258,6 @@ class URRobot(object):
         prog = "{}([{},{},{},{},{},{}], a={}, t_min={})".format(command, *vels)
         self.send_program(prog)
 
-    def speedl(self, velocities, acc, min_time):
-        """
-        move at given velocities until minimum min_time seconds
-        """
-        return self.speedx("speedl", velocities, acc, min_time)
-
-    def speedj(self, velocities, acc, min_time):
-        """
-        move at given joint velocities until minimum min_time seconds
-        """
-        return self.speedx("speedj", velocities, acc, min_time)
-
     def movej(self, joints, acc=0.1, vel=0.05, wait=True, relative=False, threshold=None):
         """
         move in joint space

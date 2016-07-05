@@ -144,18 +144,20 @@ class Robot(URRobot):
         trans = self.get_pose(wait)
         return trans.pos
 
-    def speedx(self, command, velocities, acc, min_time):
+    def speedl(self, velocities, acc, min_time):
         """
-        send command to robot formated like speedl or speedj
         move at given velocities until minimum min_time seconds
         """
-        if command != "speedj":
-            v = self.csys.orient * m3d.Vector(velocities[:3])
-            w = self.csys.orient * m3d.Vector(velocities[3:])
-            vels = np.concatenate((v.array, w.array))
-        else:
-            vels = velocities
-        URRobot.speedx(self, command, vels, acc, min_time)
+        v = self.csys.orient * m3d.Vector(velocities[:3])
+        w = self.csys.orient * m3d.Vector(velocities[3:])
+        vels = np.concatenate((v.array, w.array))
+        return self.speedx("speedl", vels, acc, min_time)
+
+    def speedj(self, velocities, acc, min_time):
+        """
+        move at given joint velocities until minimum min_time seconds
+        """
+        return self.speedx("speedj", velocities, acc, min_time)
 
     def speedl_tool(self, velocities, acc, min_time):
         """
