@@ -217,7 +217,8 @@ class Robot(URRobot):
 
     def new_csys_from_xpy(self):
         """
-        Return new coordinate system from three points: X, Origin, Y
+        Restores and returns new coordinate system calculated from three points: X, Origin, Y
+
         based on math3d: Transform.new_from_xyp
         """
         # Set coord. sys. to 0
@@ -239,7 +240,11 @@ class Robot(URRobot):
         pose = URRobot.getl(self)
         print("Introduced point defining Y: {}".format(pose[:3]))
         py = m3d.Vector(pose[:3])
-        return m3d.Transform.new_from_xyp(px - p0, py - p0, p0)
+
+        new_csys = m3d.Transform.new_from_xyp(px - p0, py - p0, p0)
+        self.set_csys(new_csys)
+
+        return new_csys
 
     @property
     def x(self):
