@@ -29,7 +29,7 @@ class URRTMonitor(threading.Thread):
     rtstruct1060 = struct.Struct('>132d')
 
     # Struct for revision of the UR controller giving 692 bytes
-    rtstruct692 = struct.Struct('>d6d6d6d6d6d6d6d6d18d6d6d6dQ')
+    rtstruct692 = struct.Struct('>d6d6d6d6d6d6d6d6d18d6d6d6dd')
 
     # for revision of the UR controller giving 540 byte. Here TCP
     # pose is not included!
@@ -300,13 +300,13 @@ class URRTlogger(URRTMonitor, threading.Thread):
  
     def __init__(self, rtmon):
         threading.Thread.__init__(self)
-        self.dataLog = logging.getLogger("DataLog")
+        self.dataLog = logging.getLogger("RTC_Data_Log")
         self._stop_event = True
         self.rtmon = rtmon
          
     def logdata(self):
         self.rtmon.wait()
-#         self.dataLog.info('target_q;%s;%s;%s;%s;%s;%s;%s', self.rtmon._ctrlTimestamp, *self.rtmon._qTarget)
+#        self.dataLog.info('target_q;%s;%s;%s;%s;%s;%s;%s', self.rtmon._ctrlTimestamp, *self.rtmon._qTarget)
 #         self.dataLog.info('target_qd;%s;%s;%s;%s;%s;%s;%s', self.rtmon._ctrlTimestamp, *self.rtmon._qdtarget)
 #         self.dataLog.info('target_qdd;%s;%s;%s;%s;%s;%s;%s', self.rtmon._ctrlTimestamp, *self.rtmon._qddtarget)
 #         self.dataLog.info('target_current;%s;%s;%s;%s;%s;%s;%s', self.rtmon._ctrlTimestamp, *self.rtmon._current_target)

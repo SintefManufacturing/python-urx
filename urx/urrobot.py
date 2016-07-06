@@ -412,8 +412,8 @@ class URRobot(object):
         self.logger.info("Closing sockets to robot")
         self.secmon.close()
         if self.rtmon:
-            self.rtmon.stop()
-            self.rtlog.stop()
+            self.rtlog.close()
+            self.rtmon.close()
 
     def set_freedrive(self, val):
         """
