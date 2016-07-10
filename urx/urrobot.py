@@ -222,9 +222,14 @@ class URRobot(object):
         self.logger.debug("Waiting for move completion using threshold %s and target %s", threshold, target)
         start_dist = self._get_dist(target, joints)
         if threshold is None:
-            threshold = start_dist * 0.8
-            if threshold < 0.001: # roboten precision is limited
-                threshold = 0.001
+            if joints:
+                threshold = start_dist * 0.1
+                if threshold < 0.005: # roboten precision is limited
+                    threshold = 0.005            
+            else:
+                threshold = start_dist * 0.01
+                if threshold < 0.001: # roboten precision is limited
+                    threshold = 0.001
             self.logger.debug("No threshold set, setting it to %s", threshold)
         count = 0
         while True:
