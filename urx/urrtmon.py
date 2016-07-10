@@ -24,16 +24,19 @@ import math3d as m3d
 
 
 class URRTMonitor(threading.Thread):
-
-    # Struct for revision of the UR controller giving 1060 bytes
+    '''
+    Documentation to Real Time Client interface can be found here: 
+    http://www.universal-robots.com/how-tos-and-faqs/how-to/ur-how-tos/remote-control-via-tcpip-16496/
+    '''
+    # Struct for revision of the UR controller giving 1060 bytes (132 double values) 
     rtstruct1060 = struct.Struct('>132d')
 
-    # Struct for revision of the UR controller giving 692 bytes
-    rtstruct692 = struct.Struct('>d6d6d6d6d6d6d6d6d18d6d6d6dd')
+    # Struct for revision of the UR controller giving 692 bytes(86 double values)
+    rtstruct692 = struct.Struct('>86d')
 
     # for revision of the UR controller giving 540 byte. Here TCP
-    # pose is not included!
-    rtstruct540 = struct.Struct('>d6d6d6d6d6d6d6d6d18d')
+    # pose is not included! (67 double values)
+    rtstruct540 = struct.Struct('>67d')
 
     def __init__(self, urHost):
         threading.Thread.__init__(self)
