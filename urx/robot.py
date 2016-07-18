@@ -206,7 +206,7 @@ class Robot(URRobot):
         if roundto:
             pose = [round(i, self.max_float_length) for i in pose]
 
-        return pose
+        return np.array(pose)
 
     def set_gravity(self, vector):
         if isinstance(vector, m3d.Vector):
