@@ -144,14 +144,20 @@ class Robot(URRobot):
         trans = self.get_pose(wait)
         return trans.pos
 
-    def speedx(self, command, velocities, acc, min_time):
+    def speedl(self, velocities, acc, min_time):
         """
-        send command to robot formated like speedl or speedj
         move at given velocities until minimum min_time seconds
         """
         v = self.csys.orient * m3d.Vector(velocities[:3])
         w = self.csys.orient * m3d.Vector(velocities[3:])
-        URRobot.speedx(self, command, np.concatenate((v.array, w.array)), acc, min_time)
+        vels = np.concatenate((v.array, w.array))
+        return self.speedx("speedl", vels, acc, min_time)
+
+    def speedj(self, velocities, acc, min_time):
+        """
+        move at given joint velocities until minimum min_time seconds
+        """
+        return self.speedx("speedj", velocities, acc, min_time)
 
     def speedl_tool(self, velocities, acc, min_time):
         """
@@ -211,23 +217,34 @@ class Robot(URRobot):
 
     def new_csys_from_xpy(self):
         """
-        Return new coordinate system from three points: X, Origin, Y
+        Restores and returns new coordinate system calculated from three points: X, Origin, Y
+
         based on math3d: Transform.new_from_xyp
         """
+        # Set coord. sys. to 0
+        self.csys = m3d.Transform()
+
         print("A new coordinate system will be defined from the next three points")
         print("Firs point is X, second Origin, third Y")
         print("Set it as a new reference by calling myrobot.set_csys(new_csys)")
         input("Move to first point and click Enter")
         # we do not use get_pose so we avoid rounding values
         pose = URRobot.getl(self)
+        print("Introduced point defining X: {}".format(pose[:3]))
+        px = m3d.Vector(pose[:3])
+        input("Move to second point and click Enter")
+        pose = URRobot.getl(self)
+        print("Introduced point defining Origo: {}".format(pose[:3]))
         p0 = m3d.Vector(pose[:3])
-        input("Move to second point and click Enter")
+        input("Move to third point and click Enter")
         pose = URRobot.getl(self)
-        p1 = m3d.Vector(pose[:3])
-        input("Move to second point and click Enter")
-        pose = URRobot.getl(self)
-        p2 = m3d.Vector(pose[:3])
-        return m3d.Transform.new_from_xyp(p1 - p0, p2 - p0, p0)
+        print("Introduced point defining Y: {}".format(pose[:3]))
+        py = m3d.Vector(pose[:3])
+
+        new_csys = m3d.Transform.new_from_xyp(px - p0, py - p0, p0)
+        self.set_csys(new_csys)
+
+        return new_csys
 
     @property
     def x(self):

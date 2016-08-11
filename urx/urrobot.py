@@ -181,7 +181,7 @@ class URRobot(object):
         """
         set analog output, val is a float
         """
-        prog = "set_analog_output(%s, %s)" % (output, val)
+        prog = "set_analog_out(%s, %s)" % (output, val)
         self.send_program(prog)
 
     def set_tool_voltage(self, val):
@@ -257,18 +257,6 @@ class URRobot(object):
         vels.append(min_time)
         prog = "{}([{},{},{},{},{},{}], a={}, t_min={})".format(command, *vels)
         self.send_program(prog)
-
-    def speedl(self, velocities, acc, min_time):
-        """
-        move at given velocities until minimum min_time seconds
-        """
-        return self.speedx("speedl", velocities, acc, min_time)
-
-    def speedj(self, velocities, acc, min_time):
-        """
-        move at given joint velocities until minimum min_time seconds
-        """
-        return self.speedx("speedj", velocities, acc, min_time)
 
     def movej(self, joints, acc=0.1, vel=0.05, wait=True, relative=False, threshold=None):
         """
