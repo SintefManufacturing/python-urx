@@ -38,6 +38,7 @@ class URRobot(object):
         self.secmon = ursecmon.SecondaryMonitor(self.host)  # data from robot at 10Hz
 
         self.rtmon = None
+        self.rtlog = None
         if use_rt:
             self.rtmon = self.get_realtime_monitor()
         # precision of joint movem used to wait for move completion
@@ -59,6 +60,8 @@ class URRobot(object):
         Return True if robot is running (not
         necessary running a program, it might be idle)
         """
+#        if self.rtmon is not None:
+#            return self.rtmon.is_running() and self.secmon.running 
         return self.secmon.running
 
     def is_program_running(self):
