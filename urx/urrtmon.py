@@ -42,6 +42,7 @@ class URRTMonitor(threading.Thread):
         threading.Thread.__init__(self)
         self.logger = logging.getLogger(self.__class__.__name__)
         self.daemon = True
+        self.running = False
         self._stop_event = True
         self._dataEvent = threading.Condition()
         self._dataAccess = threading.Lock()
@@ -291,12 +292,28 @@ class URRTMonitor(threading.Thread):
         self.stop()
         self.join()
 
+    def is_running(self):
+        '''
+        Return True if Real Time Client (RT) interface is running
+        '''
+        return self.running        
+    
     def run(self):
-        self._stop_event = False
-        self._rtSock.connect((self._urHost, 30003))
-        while not self._stop_event:
-            self.__recv_rt_data()
-        self._rtSock.close()
+        try:
+            self._stop_event = False
+            self._rtSock.connect((self._urHost, 30003))
+            while not self._stop_event:
+                self.__recv_rt_data()
+                self.running = True
+            self._rtSock.close()
+        except:
+            if self.running:
+                self.running = False
+                self.logger.error("RTDE interface stopped running")
+        
+        self.running = False        
+        with self._dataEvent:
+            self._dataEvent.notifyAll()
 
 
 class URRTlogger(URRTMonitor, threading.Thread):
