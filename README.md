@@ -3,8 +3,7 @@ urx is a python library to control the robots from 'Universal robot'. It is publ
 
 It is meant as an easy to use module for pick and place operations, although it has been used for welding and other sensor based applications that do not require high control frequency.
 
-
-Both the 'secondary port' interface and the real-time/matlab interface of the UR controller are used. urx can optionally use the [python-math3d](https://github.com/mortlind/pymath3d)(GPL) library to receive and send transformation matrices to the robot urx is known to work with all release robots from Universal Robot. Python-math3d is a very good library and is advised to anybody programming robots using python!
+Both the 'secondary port' interface and the real-time/matlab interface of the UR controller are used. urx can optionally use the [python-math3d](https://github.com/mortlind/pymath3d)(GPL) library to receive and send transformation matrices to the robot urx is known to work with all release robots from Universal Robot. 
 
 urx was primarily developed by [Olivier Roulet-Dubonnet](https://github.com/oroulet) for [Sintef Raufoss Manufacturing](http://www.sintef.no/manufacturing/).
 
