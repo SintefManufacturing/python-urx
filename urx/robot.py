@@ -12,7 +12,7 @@ from urx.urrobot import URRobot
 
 __author__ = "Olivier Roulet-Dubonnet"
 __copyright__ = "Copyright 2011-2016, Sintef Raufoss Manufacturing"
-__license__ = "GPLv3"
+__license__ = "LGPLv3"
 
 
 class Robot(URRobot):

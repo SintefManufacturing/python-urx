@@ -20,7 +20,7 @@ import time
 __author__ = "Olivier Roulet-Dubonnet"
 __copyright__ = "Copyright 2011-2013, Sintef Raufoss Manufacturing"
 __credits__ = ["Olivier Roulet-Dubonnet"]
-__license__ = "GPLv3"
+__license__ = "LGPLv3"
 
 
 class ParsingException(Exception):

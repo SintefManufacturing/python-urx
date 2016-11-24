@@ -11,7 +11,7 @@ setup (name = "urx",
         packages = ["urx"],
         provides = ["urx"],
         install_requires=["math3d"],
-        license = "GNU General Public License v3",
+        license = "GNU Lesser General Public License v3",
 
         classifiers = [
             "Programming Language :: Python",
