@@ -166,7 +166,7 @@ class Robot(URRobot):
         pose = self.get_pose()
         v = pose.orient * m3d.Vector(velocities[:3])
         w = pose.orient * m3d.Vector(velocities[3:])
-        URRobot.speedl(self, np.concatenate((v.array, w.array)), acc, min_time)
+        self.speedl(np.concatenate((v.array, w.array)), acc, min_time)
 
     def movex(self, command, pose, acc=0.01, vel=0.01, wait=True, relative=False, threshold=None):
         """
