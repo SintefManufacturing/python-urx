@@ -11,7 +11,7 @@ from urx import ursecmon
 
 __author__ = "Olivier Roulet-Dubonnet"
 __copyright__ = "Copyright 2011-2015, Sintef Raufoss Manufacturing"
-__license__ = "GPLv3"
+__license__ = "LGPLv3"
 
 
 class RobotException(Exception):
