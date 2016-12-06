@@ -25,14 +25,15 @@ def myprog():
     socket_send_string(get_joint_positions())
     while True:
         action = socket_read_string(prefix="<", suffix=">")
-        textmsg("command received: ", action)
         if action == "speedl":
             flist = socket_read_ascii_float(9)
             textmsg("speedl:", flist)
             target = [flist[1], flist[2], flist[3], flist[4], flist[5], flist[6]]
             acc = flist[7]
             t_min = flist[8]
+            textmsg("START speedl")
             speedl(target, a=acc, t=t_min)
+            textmsg("STOP speedl")
         elif action == "movel":
             flist = socket_read_ascii_float(9)
             textmsg("movel:", flist)
@@ -54,15 +55,6 @@ end
 '''
 
 
-prog_ss = '''
-ret = True
-if not ret:
-    textmsg("YESSSSSSSSS")
-end
-
-'''
-
-
 class URScriptServer(Thread):
     """
     Run a socket server in robot controller that received and 
@@ -72,68 +64,74 @@ class URScriptServer(Thread):
     """
     def __init__(self, robot):
         Thread.__init__(self)
-        self.lock = Lock()
+        self._lock = Lock()
         self.robot = robot
         self.server = None
+        self.ts = time.time()
+        self._stop_request = False
+        self._conn = None
 
+    def start(self):
+        Thread.start(self)
+        self.robot.send_program(prog)
+        print("SLEEP")
+        while self._conn is None:
+            time.sleep(0.1)
+        time.sleep(1)
+        print("END SLEEP")
 
     def run(self):
-
-        class MyTCPHandler(socketserver.BaseRequestHandler):
-            def handle(self):
-                self.server.handle = self
-                ts = time.time()
-                while not self.server.stop_request:
-                    cmd = None
-                    with self.server.lock:
-                        if self.server.cmd:
-                            cmd = self.server.cmd
-                            self.server.cmd = None
-                    if cmd:
-                        print("Sending: ", cmd)
-                        self.request.sendall(cmd)
-                        pose = self.request.recv(1024).strip()
-                        print("Received pose: ", pose)
-                        cmd = None
-                        ts = time.time()
-                    if (time.time() - ts) > 1:
-                        #print("KEEP ALIVE")
-                        self.request.sendall(b"<keepalive>")
-                        pose = self.request.recv(1024).strip()
-                        ts = time.time()
-                    time.sleep(0.001)
-
-        self.server = socketserver.TCPServer(("0.0.0.0", 10002), MyTCPHandler)
-        self.server.socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        self.server.socket.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
-        self.server.cmd = None
-        self.server.lock = self.lock
-        self.server.stop_request = False
-        self.server.serve_forever()
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
+            sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+            sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
+            sock.bind(('0.0.0.0', 10002))
+            sock.listen(1)
+            self._conn, addr = sock.accept()
+            with self._conn:
+                print('Connected by', addr)
+                pose = self._conn.recv(1024)
+                self.ts = time.time()
+                while not self._stop_request:
+                    if (time.time() - self.ts) > 1:
+                        with self._lock:
+                            self._conn.sendall(b"<keepalive>")
+                            pose = self._conn.recv(1024).strip()
+                        self.ts = time.time()
 
     def stop(self):
-        with self.lock:
-            self.server.cmd = b'<stop>'
+        self._send("stop")
         time.sleep(0.5)
-        self.server.stop_request = True
-        self.server.shutdown()
+        self._stop_request = True
+        self.join()
 
     def _send(self, cmd, *args):
         floats = []
         for arg in args:
-            if isinstance(arg, (list, tuple)):
+            if isinstance(arg, np.ndarray):
+                floats.extend(arg.tolist())
+            elif isinstance(arg, (list, tuple)):
                 floats.extend(arg)
             else:
                 floats.append(arg)
-        string = "<{}>({})".format(cmd, floats)
-        string.replace("[", "(")
-        string.replace("]", ")")
-        with self.lock:
-            self.server.cmd = string.encode('utf-8')
+        string = "<{}>".format(cmd)
+        if floats:
+            string += str(tuple(floats))
+        cmd = string.encode('utf-8')
+        print("SENDING", cmd)
+        with self._lock:
+            self._conn.sendall(cmd)
+            return self._conn.recv(1024).strip()
 
     def speedl(self, velocities, acc, min_time):
         v = self.robot.csys.orient * m3d.Vector(velocities[:3])
         w = self.robot.csys.orient * m3d.Vector(velocities[3:])
+        vels = np.concatenate((v.array, w.array))
+        return self._send("speedl", vels, acc, min_time)
+    
+    def speedl_tool(self, velocities, acc, min_time):
+        pose = self.get_pose()
+        v = pose.orient * m3d.Vector(velocities[:3])
+        w = pose.orient * m3d.Vector(velocities[3:])
         vels = np.concatenate((v.array, w.array))
         return self._send("speedl", vels, acc, min_time)
 
@@ -145,8 +143,9 @@ if __name__ == "__main__":
     ctrl = URScriptServer(r)
     try:
         ctrl.start()
-        time.sleep(1)
-        r.send_program(prog)
+        for i in range(30):
+            ctrl.speedl((0.1, 0, 0, 0, 0, 0), 1, 2)
+            time.sleep(0.01)
         embed()
     finally:
         ctrl.stop()
