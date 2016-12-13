@@ -28,10 +28,9 @@ def myprog():
                 textmsg("speedl received in servo thread")
                 cmd = ""  # disabled to compensate for network/cpu delay
                 speedl(target, a=acc, t=t_min)
-            elif cmd == "movel":
-                # just fo testing
+            elif cmd == "servoj":
                 cmd = ""
-                movel(target, v=vel, a=acc)
+                servoj(target, t=t_min)
             else:
                 sync()
             end
@@ -43,7 +42,7 @@ def myprog():
 
     thread rt_comm():
         textmsg("rt_comm thread start")
-        ret = socket_open("192.168.0.215", 10002)
+        ret = socket_open("IP_ADDRESS", 10002)
         textmsg("socket conected")
         while not stop:
             flist = socket_read_ascii_float(9)
@@ -51,6 +50,8 @@ def myprog():
             if action == 1:
                 textmsg("servoj:")
                 textmsg(flist)
+                global target = [flist[2], flist[3], flist[4], flist[5], flist[6], flist[7]]
+                global t_min = flist[8]
                 global cmd = "servoj"
             elif action == 2:
                 textmsg("speedl:")
@@ -79,6 +80,7 @@ def myprog():
     sleep(0.01)
     join rt_comm_thread
     join rt_servo_thread
+    textmsg("END PROG")
 end
 '''
 
@@ -89,7 +91,7 @@ class URScriptServer(Thread):
     This allows to process command at a rate of XX
     compared to only 10Hz using the secondary port interface
     """
-    def __init__(self, robot):
+    def __init__(self, robot, current_ip):
         Thread.__init__(self)
         self._lock = Lock()
         self.robot = robot
@@ -97,10 +99,11 @@ class URScriptServer(Thread):
         self.ts = 0
         self._stop_request = False
         self._conn = None
+        self.prog = prog.replace("IP_ADDRESS", current_ip)
 
     def start(self):
         Thread.start(self)
-        self.robot.send_program(prog)
+        self.robot.send_program(self.prog)
         while self._conn is None:
             time.sleep(0.1)
 
@@ -176,7 +179,7 @@ if __name__ == "__main__":
     logging.basicConfig(level=logging.WARNING)
     r = urx.Robot("192.168.0.90")
     r.stop()  # stop any running things
-    ctrl = URScriptServer(r)
+    ctrl = URScriptServer(r, "192.168.0.215")
     try:
         ctrl.start()
         st = time.time()
