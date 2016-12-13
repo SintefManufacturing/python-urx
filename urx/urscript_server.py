@@ -13,49 +13,6 @@ import urx
 
 prog = '''
 def myprog():
-    textmsg("Starting program")
-    ret = socket_open("192.168.0.215", 10002)
-    if ret:
-        textmsg("socket conected")
-    else:
-        textmsg("Coul not open socket aborting")
-        return 0
-    end
-    textmsg("socket conected")
-    socket_send_string(get_joint_positions())
-    while True:
-        action = socket_read_string(prefix="<", suffix=">")
-        if action == "speedl":
-            flist = socket_read_ascii_float(9)
-            textmsg("speedl:", flist)
-            target = [flist[1], flist[2], flist[3], flist[4], flist[5], flist[6]]
-            acc = flist[7]
-            t_min = flist[8]
-            textmsg("START speedl")
-            speedl(target, a=acc, t=t_min)
-            textmsg("STOP speedl")
-        elif action == "movel":
-            flist = socket_read_ascii_float(9)
-            textmsg("movel:", flist)
-            global target = [flist[1], flist[2], flist[3], flist[4], flist[5], flist[6]]
-            global vel = flist[7]
-            global acc = flist[8]
-            global cmd = action
-            movel(target, v=vel, a=acc)
-        elif action == "stop":
-            textmsg("Stop request received")
-            break
-        end
-        socket_send_string(get_joint_positions())
-    end
-    socket_close()
-    textmsg("End program")
-
-end
-'''
-
-prog = '''
-def myprog():
     
     stop = False
     cmd = ""
@@ -89,25 +46,21 @@ def myprog():
         ret = socket_open("192.168.0.215", 10002)
         textmsg("socket conected")
         while not stop:
-            action = socket_read_string(prefix="<", suffix=">")
-            textmsg("command received: ", action)
-            if action == "speedl":
-                flist = socket_read_ascii_float(9)
-                textmsg("speedl:", flist)
-                global target = [flist[1], flist[2], flist[3], flist[4], flist[5], flist[6]]
-                global acc = flist[7]
-                global t_min = flist[8]
-                textmsg("t_min:", flist[8])
-                global cmd = action
-            elif action == "movel":
-                flist = socket_read_ascii_float(9)
-                textmsg("movel:", flist)
-                global target = [flist[1], flist[2], flist[3], flist[4], flist[5], flist[6]]
-                global vel = flist[7]
+            flist = socket_read_ascii_float(9)
+            action = flist[1]
+            if action == 1:
+                textmsg("servoj:")
+                textmsg(flist)
+                global cmd = "servoj"
+            elif action == 2:
+                textmsg("speedl:")
+                textmsg(flist)
+                global target = [flist[2], flist[3], flist[4], flist[5], flist[6], flist[7]]
                 global acc = flist[8]
-                global cmd = action
-            elif action == "stop":
-                textmsg("Thread loop stopping with action: ", action)
+                global t_min = flist[9]
+                global cmd = "speedl"
+            elif action == 0 :
+                textmsg("Thread loop received stop, stopping")
                 global stop = True
                 break
             end
@@ -128,7 +81,6 @@ def myprog():
     join rt_servo_thread
 end
 '''
-
 
 class URScriptServer(Thread):
     """
@@ -162,19 +114,23 @@ class URScriptServer(Thread):
             with self._conn:
                 print('Connected by', addr)
                 while not self._stop_request:
-                    if (time.time() - self.ts) > 1:
-                        with self._lock:
-                            self._conn.sendall(b"<keepalive>")
-                            pose = self._conn.recv(1024).strip()
-                        self.ts = time.time()
+                    with self._lock:
+                        if (time.time() - self.ts) > 0.5:
+                            print("sending timeout", time.time(), self.ts, time.time() - self.ts)
+                            s = b"99.99"
+                            for i in range(8):
+                                s += b", 0.0"
+                            self._conn.sendall(s)
+                            ans = self._conn.recv(1024).strip()
+                            self.ts = time.time()
 
     def stop(self):
-        self._send("stop")
+        self._send(0.0)  # 0 mean stop
         time.sleep(0.5)
         self._stop_request = True
         self.join()
 
-    def _send(self, cmd, *args):
+    def _send(self, *args):
         floats = []
         for arg in args:
             if isinstance(arg, np.ndarray):
@@ -183,27 +139,38 @@ class URScriptServer(Thread):
                 floats.extend(arg)
             else:
                 floats.append(arg)
-        string = "<{}>".format(cmd)
-        if floats:
-            string += str(tuple(floats))
+        while len(floats) != 9:
+            floats.append(0.0)
+            
+        string = str(tuple(floats))
         cmd = string.encode('utf-8')
         with self._lock:
             self._conn.sendall(cmd)
-            return self._conn.recv(1024).strip()
+            pose = self._conn.recv(1024).strip()
+            if not pose or pose == b"CLOSE":
+                # looks like ur sends a close string sometimes
+                return None
+            pose = pose[1:-1]
+            pose = pose.split(b",")
+            self.ts = time.time()
+            return [float(i) for i in pose]
 
     def speedl(self, velocities, acc, min_time):
         v = self.robot.csys.orient * m3d.Vector(velocities[:3])
         w = self.robot.csys.orient * m3d.Vector(velocities[3:])
         vels = np.concatenate((v.array, w.array))
-        return self._send("speedl", vels, acc, min_time)
+        return self._send(2.0, vels, acc, min_time)
     
     def speedl_tool(self, velocities, acc, min_time):
         pose = self.get_pose()
         v = pose.orient * m3d.Vector(velocities[:3])
         w = pose.orient * m3d.Vector(velocities[3:])
         vels = np.concatenate((v.array, w.array))
-        return self._send("speedl", vels, acc, min_time)
+        return self._send(2.0, vels, acc, min_time)
 
+    def servoj(self, joints, min_time):
+        return self._send(1.0, joints, acc)
+ 
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.WARNING)
