@@ -42,7 +42,7 @@ class URRobot(object):
             self.rtmon = self.get_realtime_monitor()
         # precision of joint movem used to wait for move completion
         # the value must be conservative! otherwise we may wait forever
-        self.joinEpsilon = 0.01  
+        self.joinEpsilon = 0.01
         # It seems URScript is  limited in the character length of floats it accepts
         self.max_float_length = 6  # FIXME: check max length!!!
 
@@ -53,6 +53,12 @@ class URRobot(object):
 
     def __str__(self):
         return self.__repr__()
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        self.close()
 
     def is_running(self):
         """
@@ -235,8 +241,8 @@ class URRobot(object):
             dist += (target[i] - pose[i]) ** 2
         for i in range(3, 6):
             dist += ((target[i] - pose[i]) / 5) ** 2 # arbitraty length like
-        return dist ** 0.5 
-    
+        return dist ** 0.5
+
     def _get_joints_dist(self, target):
         joints = self.getj(wait=True)
         dist = 0
@@ -432,6 +438,3 @@ class URRobot(object):
         Move down in csys z
         """
         self.up(-z, acc, vel)
-
-
-

@@ -252,5 +252,3 @@ class URRTMonitor(threading.Thread):
         while not self._stop_event:
             self.__recv_rt_data()
         self._rtSock.close()
-
-
