@@ -365,11 +365,3 @@ class Robot(URRobot):
         t = m3d.Transform()
         t.orient.rotate_zb(val)
         self.add_pose_tool(t)
-
-
-
-
-
-
-
-
