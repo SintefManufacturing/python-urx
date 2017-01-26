@@ -4,13 +4,6 @@ Confer http://support.universal-robots.com/Technical/RealTimeClientInterface
 Note: The packet lenght given in the web-page is 740. What is actually received from the controller is 692. It is assumed that the motor currents, the last group of 48 bytes, are not send.
 Originally Written by Morten Lind
 '''
-
-__author__ = "Morten Lind, Olivier Roulet-Dubonnet"
-__copyright__ = "Copyright 2011, NTNU/SINTEF Raufoss Manufacturing AS"
-__credits__ = ["Morten Lind, Olivier Roulet-Dubonnet"]
-__license__ = "LGPLv3"
-
-
 import logging
 import socket
 import struct
@@ -21,6 +14,11 @@ from copy import deepcopy
 import numpy as np
 
 import math3d as m3d
+
+__author__ = "Morten Lind, Olivier Roulet-Dubonnet"
+__copyright__ = "Copyright 2011, NTNU/SINTEF Raufoss Manufacturing AS"
+__credits__ = ["Morten Lind, Olivier Roulet-Dubonnet"]
+__license__ = "LGPLv3"
 
 
 class URRTMonitor(threading.Thread):
@@ -51,7 +49,7 @@ class URRTMonitor(threading.Thread):
         self._tcp_force = None
         self.__recvTime = 0
         self._last_ctrl_ts = 0
-        #self._last_ts = 0
+        # self._last_ts = 0
         self._buffering = False
         self._buffer_lock = threading.Lock()
         self._buffer = []
@@ -138,7 +136,7 @@ class URRTMonitor(threading.Thread):
         timestamp = self.__recvTime
         pkgsize = struct.unpack('>i', head)[0]
         self.logger.debug(
-            'Received header telling that package is %s bytes long', 
+            'Received header telling that package is %s bytes long',
             pkgsize)
         payload = self.__recv_bytes(pkgsize - 4)
         if pkgsize >= 692:
@@ -155,14 +153,14 @@ class URRTMonitor(threading.Thread):
             self._timestamp = timestamp
             # it seems that packet often arrives packed as two... maybe TCP_NODELAY is not set on UR controller??
             # if (self._timestamp - self._last_ts) > 0.010:
-            #self.logger.warning("Error the we did not receive a packet for {}s ".format( self._timestamp - self._last_ts))
-            #self._last_ts = self._timestamp
+            # self.logger.warning("Error the we did not receive a packet for {}s ".format( self._timestamp - self._last_ts))
+            # self._last_ts = self._timestamp
             self._ctrlTimestamp = np.array(unp[0])
             if self._last_ctrl_ts != 0 and (
                     self._ctrlTimestamp -
                     self._last_ctrl_ts) > 0.010:
                 self.logger.warning(
-                    "Error the controller failed to send us a packet: time since last packet %s s ", 
+                    "Error the controller failed to send us a packet: time since last packet %s s ",
                     self._ctrlTimestamp - self._last_ctrl_ts)
             self._last_ctrl_ts = self._ctrlTimestamp
             self._qActual = np.array(unp[31:37])
@@ -239,7 +237,7 @@ class URRTMonitor(threading.Thread):
                 tcp_force=self._tcp_force)
 
     def stop(self):
-        #print(self.__class__.__name__+': Stopping')
+        # print(self.__class__.__name__+': Stopping')
         self._stop_event = True
 
     def close(self):

@@ -208,7 +208,7 @@ class URRobot(object):
         start_dist = self._get_dist(target, joints)
         if threshold is None:
             threshold = start_dist * 0.8
-            if threshold < 0.001: # roboten precision is limited
+            if threshold < 0.001:  # roboten precision is limited
                 threshold = 0.001
             self.logger.debug("No threshold set, setting it to %s", threshold)
         count = 0
@@ -234,13 +234,13 @@ class URRobot(object):
             return self._get_lin_dist(target)
 
     def _get_lin_dist(self, target):
-        #FIXME: we have an issue here, it seems sometimes the axis angle received from robot
+        # FIXME: we have an issue here, it seems sometimes the axis angle received from robot
         pose = URRobot.getl(self, wait=True)
         dist = 0
         for i in range(3):
             dist += (target[i] - pose[i]) ** 2
         for i in range(3, 6):
-            dist += ((target[i] - pose[i]) / 5) ** 2 # arbitraty length like
+            dist += ((target[i] - pose[i]) / 5) ** 2  # arbitraty length like
         return dist ** 0.5
 
     def _get_joints_dist(self, target):

@@ -1,10 +1,10 @@
 """
 This file contains 2 classes:
     - ParseUtils containing utilies to parse data from UR robot
-    - SecondaryMonitor, a class opening a socket to the robot and with methods to 
+    - SecondaryMonitor, a class opening a socket to the robot and with methods to
             access data and send programs to the robot
 Both use data from the secondary port of the URRobot.
-Only the last connected socket on 3001 is the primary client !!!! 
+Only the last connected socket on 3001 is the primary client !!!!
 So do not rely on it unless you know no other client is running (Hint the UR java interface is a client...)
 http://support.universal-robots.com/Technical/PrimaryAndSecondaryClientInterface
 """
@@ -69,7 +69,7 @@ class ParserUtils(object):
                     self.version = (3, 0)
                     allData['RobotModeData'] = self._get_data(pdata, "!IBQ???????BBdd", ("size", "type", "timestamp", "isRobotConnected", "isRealRobotEnabled", "isPowerOnRobot", "isEmergencyStopped", "isSecurityStopped", "isProgramRunning", "isProgramPaused", "robotMode", "controlMode", "speedFraction", "speedScaling"))
                 elif psize == 46:  # It's 46 bytes in 3.2
-                    self.version = (3,2)
+                    self.version = (3, 2)
                     allData['RobotModeData'] = self._get_data(pdata, "!IBQ???????BBdd", ("size", "type", "timestamp", "isRobotConnected", "isRealRobotEnabled", "isPowerOnRobot", "isEmergencyStopped", "isSecurityStopped", "isProgramRunning", "isProgramPaused", "robotMode", "controlMode", "speedFraction", "speedScaling", "speedFractionLimit"))
                 else:
                     allData["RobotModeData"] = self._get_data(pdata, "!iBQ???????Bd", ("size", "type", "timestamp", "isRobotConnected", "isRealRobotEnabled", "isPowerOnRobot", "isEmergencyStopped", "isSecurityStopped", "isProgramRunning", "isProgramPaused", "robotMode", "speedFraction"))
@@ -94,7 +94,7 @@ class ParserUtils(object):
                 else:
                     fmt = "iBhhbbddbbddffffBBb"     # firmware < 3.0
 
-                allData["MasterBoardData"] = self._get_data(pdata, fmt, ("size", "type", "digitalInputBits", "digitalOutputBits", "analogInputRange0", "analogInputRange1", "analogInput0", "analogInput1", "analogInputDomain0", "analogInputDomain1", "analogOutput0", "analogOutput1", "masterBoardTemperature", "robotVoltage48V", "robotCurrent", "masterIOCurrent"))  # , "masterSafetyState" ,"masterOnOffState", "euromap67InterfaceInstalled"   )) 
+                allData["MasterBoardData"] = self._get_data(pdata, fmt, ("size", "type", "digitalInputBits", "digitalOutputBits", "analogInputRange0", "analogInputRange1", "analogInput0", "analogInput1", "analogInputDomain0", "analogInputDomain1", "analogOutput0", "analogOutput1", "masterBoardTemperature", "robotVoltage48V", "robotCurrent", "masterIOCurrent"))  # , "masterSafetyState" ,"masterOnOffState", "euromap67InterfaceInstalled"   ))
             elif ptype == 2:
                 allData["ToolData"] = self._get_data(pdata, "iBbbddfBffB", ("size", "type", "analoginputRange2", "analoginputRange3", "analogInput2", "analogInput3", "toolVoltage48V", "toolOutputVoltage", "toolCurrent", "toolTemperature", "toolMode"))
             elif ptype == 9:
@@ -104,9 +104,9 @@ class ParserUtils(object):
             elif ptype == 7 and self.version >= (3, 2):
                 allData["ForceModeData"] = self._get_data(pdata, "iBddddddd", ("size", "type", "x", "y", "z", "rx", "ry", "rz", "robotDexterity"))
             # elif ptype == 8:
-                #allData["varMessage"] = self._get_data(pdata, "!iBQbb iiBAcAc", ("size", "type", "timestamp", "source", "robotMessageType", "code", "argument", "titleSize", "messageTitle", "messageText"))
+            #     allData["varMessage"] = self._get_data(pdata, "!iBQbb iiBAcAc", ("size", "type", "timestamp", "source", "robotMessageType", "code", "argument", "titleSize", "messageTitle", "messageText"))
             # elif ptype == 7:
-                #allData["keyMessage"] = self._get_data(pdata, "!iBQbb iiBAcAc", ("size", "type", "timestamp", "source", "robotMessageType", "code", "argument", "titleSize", "messageTitle", "messageText"))
+            #     allData["keyMessage"] = self._get_data(pdata, "!iBQbb iiBAcAc", ("size", "type", "timestamp", "source", "robotMessageType", "code", "argument", "titleSize", "messageTitle", "messageText"))
 
             elif ptype == 20:
                 tmp = self._get_data(pdata, "!iB Qbb", ("size", "type", "timestamp", "source", "robotMessageType"))
@@ -217,11 +217,11 @@ class ParserUtils(object):
                     # ok we we have somehting which looks like a packet"
                     return (data[:psize], data[psize:])
                 else:
-                    #packet is not complete
+                    # packet is not complete
                     self.logger.debug("Packet is not complete, advertised size is %s, received size is %s, type is %s", psize, len(data), ptype)
                     return None
             else:
-                #self.logger.debug("data smaller than 5 bytes")
+                # self.logger.debug("data smaller than 5 bytes")
                 return None
 
 
@@ -314,7 +314,7 @@ class SecondaryMonitor(Thread):
                     self.logger.error("Robot not running: " + str(self._dict["RobotModeData"]))
                 self.running = False
             with self._dataEvent:
-                #print("X: new data")
+                # print("X: new data")
                 self._dataEvent.notifyAll()
 
     def _get_data(self):
@@ -322,14 +322,14 @@ class SecondaryMonitor(Thread):
         returns something that looks like a packet, nothing is guaranted
         """
         while True:
-            #self.logger.debug("data queue size is: {}".format(len(self._dataqueue)))
+            # self.logger.debug("data queue size is: {}".format(len(self._dataqueue)))
             ans = self._parser.find_first_packet(self._dataqueue[:])
             if ans:
                 self._dataqueue = ans[1]
-                #self.logger.debug("found packet of size {}".format(len(ans[0])))
+                # self.logger.debug("found packet of size {}".format(len(ans[0])))
                 return ans[0]
             else:
-                #self.logger.debug("Could not find packet in received data")
+                # self.logger.debug("Could not find packet in received data")
                 tmp = self._s_secondary.recv(1024)
                 self._dataqueue += tmp
 

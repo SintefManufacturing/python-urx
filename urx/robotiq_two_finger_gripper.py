@@ -26,61 +26,62 @@ Future Features
 
 import logging
 
+
 class Robotiq_Two_Finger_Gripper(object):
-	complete_program = ""
-	header = "def myProg():" + b"\n"
-	end =  b"\n" + "end"
-	logger = False
+    complete_program = ""
+    header = "def myProg():" + b"\n"
+    end = b"\n" + "end"
+    logger = False
 
-	def __init__(self):
-		self.logger = logging.getLogger("urx")
-		self.reset()
+    def __init__(self):
+        self.logger = logging.getLogger("urx")
+        self.reset()
 
-	def reset(self):
-		self.complete_program = ""
-		self.add_line_to_program("set_analog_inputrange(0, 0)")
-		self.add_line_to_program("set_analog_inputrange(1, 0)")
-		self.add_line_to_program("set_analog_inputrange(2, 0)")
-		self.add_line_to_program("set_analog_inputrange(3, 0)")
-		self.add_line_to_program("set_analog_outputdomain(0, 0)")
-		self.add_line_to_program("set_analog_outputdomain(1, 0)")
-		self.add_line_to_program("set_tool_voltage(0)")
-		self.add_line_to_program("set_runstate_outputs([])")
-		self.add_line_to_program("set_payload(0.85)") #0.85 is the weight of the gripper in KG
-		self.add_line_to_program("socket_close(\"gripper_socket\")")
-		#self.add_line_to_program("sleep(1)") #in Robotiq's example they do a wait here... I haven't found it nec
-		self.add_line_to_program("socket_open(\"127.0.0.1\",63352,\"gripper_socket\")")
-		#self.add_line_to_program("sleep(1)")
-		self.add_line_to_program("socket_set_var(\"SEP\",255,\"gripper_socket\")") #Speed 0-255 is valid
-		self.add_line_to_program("sync()")
-		self.add_line_to_program("socket_set_var(\"FOR\",50,\"gripper_socket\")") #Force 0-255 is valid
-		self.add_line_to_program("sync()")
-		self.add_line_to_program("socket_set_var(\"ACT\",1,\"gripper_socket\")") # Activate robot
-		self.add_line_to_program("sync()")
-		self.add_line_to_program("socket_set_var(\"GTO\",1,\"gripper_socket\")")
-		self.add_line_to_program("sync()")
+    def reset(self):
+        self.complete_program = ""
+        self.add_line_to_program("set_analog_inputrange(0, 0)")
+        self.add_line_to_program("set_analog_inputrange(1, 0)")
+        self.add_line_to_program("set_analog_inputrange(2, 0)")
+        self.add_line_to_program("set_analog_inputrange(3, 0)")
+        self.add_line_to_program("set_analog_outputdomain(0, 0)")
+        self.add_line_to_program("set_analog_outputdomain(1, 0)")
+        self.add_line_to_program("set_tool_voltage(0)")
+        self.add_line_to_program("set_runstate_outputs([])")
+        self.add_line_to_program("set_payload(0.85)")  # 0.85 is the weight of the gripper in KG
+        self.add_line_to_program("socket_close(\"gripper_socket\")")
+        # self.add_line_to_program("sleep(1)")  # in Robotiq's example they do a wait here... I haven't found it nec
+        self.add_line_to_program("socket_open(\"127.0.0.1\",63352,\"gripper_socket\")")
+        # self.add_line_to_program("sleep(1)")
+        self.add_line_to_program("socket_set_var(\"SEP\",255,\"gripper_socket\")")  # Speed 0-255 is valid
+        self.add_line_to_program("sync()")
+        self.add_line_to_program("socket_set_var(\"FOR\",50,\"gripper_socket\")")  # Force 0-255 is valid
+        self.add_line_to_program("sync()")
+        self.add_line_to_program("socket_set_var(\"ACT\",1,\"gripper_socket\")")  # Activate robot
+        self.add_line_to_program("sync()")
+        self.add_line_to_program("socket_set_var(\"GTO\",1,\"gripper_socket\")")
+        self.add_line_to_program("sync()")
 
-	def open_gripper(self):
-		self.add_line_to_program("socket_set_var(\"POS\",0,\"gripper_socket\")") #0 is open; range is 0-255
-		self.add_line_to_program("sync()")
-		self.add_line_to_program("sleep(2)")
+    def open_gripper(self):
+        self.add_line_to_program("socket_set_var(\"POS\",0,\"gripper_socket\")")  # 0 is open; range is 0-255
+        self.add_line_to_program("sync()")
+        self.add_line_to_program("sleep(2)")
 
-	def close_gripper(self):
-		self.add_line_to_program("socket_set_var(\"POS\",255,\"gripper_socket\")") #255 is closed; range is 0-255
-		self.add_line_to_program("sync()")
-		self.add_line_to_program("sleep(2)")
+    def close_gripper(self):
+        self.add_line_to_program("socket_set_var(\"POS\",255,\"gripper_socket\")")  # 255 is closed; range is 0-255
+        self.add_line_to_program("sync()")
+        self.add_line_to_program("sleep(2)")
 
-	def add_line_to_program(self,new_line):
-		if(self.complete_program != ""):
-			self.complete_program += b"\n"
-		self.complete_program += new_line
+    def add_line_to_program(self, new_line):
+        if(self.complete_program != ""):
+            self.complete_program += b"\n"
+        self.complete_program += new_line
 
-	def ret_program_to_run(self):
-		if(self.complete_program == ""):
-			self.logger.debug("robotiq_two_finger_gripper's program is empty")
-			return ""
+    def ret_program_to_run(self):
+        if(self.complete_program == ""):
+            self.logger.debug("robotiq_two_finger_gripper's program is empty")
+            return ""
 
-		prog = self.header
-		prog += self.complete_program
-		prog += self.end
-		return prog
+        prog = self.header
+        prog += self.complete_program
+        prog += self.end
+        return prog
