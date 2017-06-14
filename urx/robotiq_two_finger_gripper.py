@@ -47,20 +47,20 @@ import time
 from urx.urscript import URScript
 
 # Gripper Variables
-ACT = b"ACT"
-GTO = b"GTO"
-ATR = b"ATR"
-ARD = b"ARD"
-FOR = b"FOR"
-SPE = b"SPE"
-OBJ = b"OBJ"
-STA = b"STA"
-FLT = b"FLT"
-POS = b"POS"
+ACT = "ACT"
+GTO = "GTO"
+ATR = "ATR"
+ARD = "ARD"
+FOR = "FOR"
+SPE = "SPE"
+OBJ = "OBJ"
+STA = "STA"
+FLT = "FLT"
+POS = "POS"
 
-SOCKET_HOST = b"127.0.0.1"
+SOCKET_HOST = "127.0.0.1"
 SOCKET_PORT = 63352
-SOCKET_NAME = b"gripper_socket"
+SOCKET_NAME = "gripper_socket"
 
 
 class RobotiqScript(URScript):
@@ -88,7 +88,7 @@ class RobotiqScript(URScript):
             self.add_header_to_program(rq_script)
 
     def _rq_get_var(self, var_name, nbytes):
-        self._socket_send_string(b"GET {}".format(var_name))
+        self._socket_send_string("GET {}".format(var_name))
         self._socket_read_byte_list(nbytes)
 
     def _get_gripper_fault(self):
