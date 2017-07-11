@@ -183,6 +183,9 @@ class Robotiq_Two_Finger_Gripper(object):
         urscript._set_robot_activate()
         urscript._set_gripper_activate()
 
+        # Wait on activation to avoid USB conflicts
+        urscript._sleep(0.1)
+
         return urscript
 
     def gripper_action(self, value):
