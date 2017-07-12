@@ -397,7 +397,8 @@ class URRobot(object):
         if val:
             self.send_program("def myProg():\n\tfreedrive_mode()\n\tsleep({})\nend".format(timeout))
         else:
-            self.send_program("set robotmode run")
+            # This is a non-existant program, but running it will stop freedrive
+            self.send_program("def myProg():\n\end_freedrive_mode()\nend")
 
     def set_simulation(self, val):
         if val:
