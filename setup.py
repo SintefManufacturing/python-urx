@@ -1,5 +1,4 @@
-from distutils.core import setup
-from distutils.command.install_data import install_data
+from setuptools import setup
 
 setup(
     name="urx",
