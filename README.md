@@ -7,7 +7,14 @@ Both the 'secondary port' interface and the real-time/matlab interface of the UR
 
 urx was primarily developed by [Olivier Roulet-Dubonnet](https://github.com/oroulet) for [Sintef Raufoss Manufacturing](http://www.sintef.no/manufacturing/).
 
-#Example use:
+
+
+# Install
+
+The easiest is probably to use pip: pip install urx
+
+
+# Example use:
 
 ```python
 import urx
@@ -42,7 +49,7 @@ except RobotError, ex:
     print("Robot could not execute move (emergency stop for example), do something", ex)
 ```
 
-#Development using Transform objects from math3d library:
+# Development using Transform objects from math3d library:
 
 ```python
 from urx import Robot
@@ -68,7 +75,7 @@ o.rotate_yb(pi)
 robot.set_orientation(o)
 ```
 
-#Other interactive methods/properties
+#O ther interactive methods/properties
 
 ```python
 
@@ -84,7 +91,7 @@ rob.set_csys(csys)
 ```
 
 
-#Robotiq Gripper
+# Robotiq Gripper
 
 urx can also control a Robotiq gripper attached to the UR robot.  The robotiq class was primarily developed by [Mark Silliman](https://github.com/markwsilliman).
 
