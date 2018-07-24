@@ -1,9 +1,9 @@
 
-urx is a python library to control the robots from 'Universal robot'. It is published under the LGPL license and comes with absolutely no guarantee.
+urx is a python library to control the robots from [Universal Robots](https://www.universal-robots.com/). It is published under the LGPL license and comes with absolutely no guarantee.
 
 It is meant as an easy to use module for pick and place operations, although it has been used for welding and other sensor based applications that do not require high control frequency.
 
-Both the 'secondary port' interface and the real-time/matlab interface of the UR controller are used. urx can optionally use the [python-math3d](https://github.com/mortlind/pymath3d)(GPL) library to receive and send transformation matrices to the robot urx is known to work with all release robots from Universal Robot. 
+Both the 'secondary port' interface and the real-time/matlab interface of the UR controller are used. urx can optionally use the [python-math3d](https://github.com/mortlind/pymath3d)(GPL) library to receive and send transformation matrices to the robot urx is known to work with all release robots from Universal Robot.
 
 urx was primarily developed by [Olivier Roulet-Dubonnet](https://github.com/oroulet) for [Sintef Raufoss Manufacturing](http://www.sintef.no/manufacturing/).
 
@@ -23,7 +23,7 @@ rob = urx.Robot("192.168.0.100")
 rob.set_tcp((0, 0, 0.1, 0, 0, 0))
 rob.set_payload(2, (0, 0, 0.1))
 sleep(0.2)  #leave some time to robot to process the setup commands
-rob.movej((1, 2, 3, 4, 5, 6), a, v) 
+rob.movej((1, 2, 3, 4, 5, 6), a, v)
 rob.movel((x, y, z, rx, ry, rz), a, v)
 print "Current tool pose is: ",  rob.getl()
 rob.movel((0.1, 0, 0, 0, 0, 0), a, v, relative=true)  # move relative to current pose
@@ -75,7 +75,7 @@ o.rotate_yb(pi)
 robot.set_orientation(o)
 ```
 
-#O ther interactive methods/properties
+# Other interactive methods/properties
 
 ```python
 
@@ -95,7 +95,7 @@ rob.set_csys(csys)
 
 urx can also control a Robotiq gripper attached to the UR robot.  The robotiq class was primarily developed by [Mark Silliman](https://github.com/markwsilliman).
 
-##Example use:
+## Example use:
 
 ```python
 import sys
