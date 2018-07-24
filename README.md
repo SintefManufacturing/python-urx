@@ -1,5 +1,5 @@
 
-urx is a python library to control the robots from 'Universal Robots'. It is published under the LGPL license and comes with absolutely no guarantee.
+urx is a python library to control the robots from [Universal Robots](https://www.universal-robots.com/). It is published under the LGPL license and comes with absolutely no guarantee.
 
 It is meant as an easy to use module for pick and place operations, although it has been used for welding and other sensor based applications that do not require high control frequency.
 
