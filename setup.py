@@ -9,7 +9,7 @@ setup(
     url='https://github.com/oroulet/python-urx',
     packages=["urx"],
     provides=["urx"],
-    install_requires=["math3d"],
+    install_requires=["numpy", "math3d"],
     license="GNU Lesser General Public License v3",
     classifiers=[
         "Programming Language :: Python",

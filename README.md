@@ -11,7 +11,10 @@ urx was primarily developed by [Olivier Roulet-Dubonnet](https://github.com/orou
 
 # Install
 
-The easiest is probably to use pip: pip install urx
+The easiest is probably to use pip:
+```
+pip install urx
+```
 
 
 # Example use:
