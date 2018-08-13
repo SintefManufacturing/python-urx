@@ -1,4 +1,10 @@
-
+# The customed URX library of HAIR lab ur platform
+### adding get joints velocity vector ability in the following way, must in RT monitor mode.
+```python
+import urx
+r = urx.Robot('192.168.10.1', use_rt=True)
+qd = r.rtmon.qd_actual()
+```
 urx is a python library to control the robots from [Universal Robots](https://www.universal-robots.com/). It is published under the LGPL license and comes with absolutely no guarantee.
 
 It is meant as an easy to use module for pick and place operations, although it has been used for welding and other sensor based applications that do not require high control frequency.
