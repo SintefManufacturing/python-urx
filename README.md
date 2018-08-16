@@ -1,4 +1,3 @@
-
 urx is a python library to control the robots from 'Universal robot'. It is published under the LGPL license and comes with absolutely no guarantee.
 
 It is meant as an easy to use module for pick and place operations, although it has been used for welding and other sensor based applications that do not require high control frequency.
@@ -114,3 +113,33 @@ if __name__ == '__main__':
 	print "true"
 	sys.exit()
 ```
+
+#RG2 Gripper
+
+urx can also control an RG2 gripper attached to the UR robot. This class was primarily developed by [David Hinwood](https://github.com/u3099811)
+
+Additional Notes
+Gripper will contiously try to close(stopped at the set force value in newtons) if set to zero and grasping an object. This is part of the design and not an error. The same functionality is embedded in the default program
+
+##Example use:
+
+	import sys
+	import urx
+	#import the class
+	from urx import RG2Gripper as GripClass
+	#initialize robot
+	rob = urx.Robot("192.168.0.100")
+	#gripper object instantiation
+	gripperInstance = GripClass.RG2(rob)
+	#set to close, 0 being the gap between the pincers
+	gripperInstance.setWidth(0)
+	#set to open, 110 being the maximum, can set to any value lower
+	gripperInstance.setWidth(110)
+	#get current width
+	#possible uses of the width value can be used to determine if the robot is grasping and object
+	gripperInstance.getWidth()
+	#shutdown routine
+	rob.close()
+	sys.exit()
+	
+
