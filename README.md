@@ -119,29 +119,29 @@ if __name__ == '__main__':
 urx can also control an RG2 gripper attached to the UR robot. This class was primarily developed by [David Hinwood](https://github.com/u3099811)
 
 Additional Notes
-	Gripper will contiously try to close(stopped at the set force value in newtons) if set to a 	width smaller than the current width while grasping an object. This is part of the design and not 		an error. The same functionality is embedded in the default program
+	Gripper will contiously try to close(stopped at the set force value in newtons) if set to a width smaller than the current width while grasping an object. This is part of the design and not 		an error. The same functionality is embedded in the default program
 
 	You require an ethernet connection to the robot
 
 ##Example use:
 
-	import sys
-	import urx
-	#import the class
-	from urx import RG2Gripper as GripClass
-	#initialize robot
-	rob = urx.Robot("192.168.0.100")
-	#gripper object instantiation
-	gripperInstance = GripClass.RG2(rob)
-	#set to close, 0 being the gap between the pincers
-	gripperInstance.setWidth(0)
-	#set to open, 110 being the maximum, can set to any value lower
-	gripperInstance.setWidth(110)
-	#get current width
-	#possible uses of the width value can be used to determine if the robot is grasping and object
-	gripperInstance.getWidth()
-	#shutdown routine
-	rob.close()
-	sys.exit()
+import sys
+import urx
+import time
+#import file
+from urx import RG2Gripper as GripClass
+rob = urx.Robot("10.0.0.157")
+#instantiate object
+gripperInstance = GripClass.RG2(rob)
+#basic delay for script(to complete action, RG2 approximatly takes 1.3 seconds to close from completely open)
+time.sleep(2)
+#set distance between pincers apart, in this case closing
+gripperInstance.setWidth(0)
+time.sleep(2)
+#open the gripper completly
+gripperInstance.setWidth(110)
+time.sleep(2)
+#returns the current width of the robot
+gripperInstance.getWidth()
 	
 
