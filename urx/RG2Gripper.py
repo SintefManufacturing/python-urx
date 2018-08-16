@@ -17,29 +17,40 @@ import time
                  it will still go to zero
                 -Possible ways to determine grasping include setting the width to max for
                  non grasping movements and to evaluate pickup check the width
-                
+
+	    
+            Future feautes
+	    While it is possible to currently infer whether the robot is currently holding 
+	    something it would be a beneficial feature to read the force being applied and
+	    return to user grasp success would be a prefered implementation. Unfortunatly
+	    this was unfeasible during the first round at development. It is on the 
+	    horizon but on an unknown timeframe.
+
+	    License: LGPL-3.0
 """
 
 
 class RG2:
-
     '''Initialization of class, requires user to be connected to robot via ethernet'''
-    def __init__(self,RobotParameter):
+
+    def __init__(self, RobotParameter):
         import netifaces as ni
         ni.ifaddresses('eth0')
         self.ip = ni.ifaddresses('eth0')[ni.AF_INET][0]['addr']
         self.Robot = (RobotParameter)
-        self.GripperMonitorSocket=50002
-        self.MonitorThreadRunning=False
-        self.currentwidth=0.0
+        self.GripperMonitorSocket = 50002
+        self.MonitorThreadRunning = False
+        self.currentwidth = 0.0
         self.logger = logging.getLogger("urx")
 
-    '''Gets the current width of the gripper'''
+    '''Gets the current width between the gripper fingers in mm'''
+
     def getWidth(self):
+        '''opens a thread in the background to listen to a message from the gripper'''
 
         def StartBackgroundListenerService():
             data = float(-1)
-            while self.MonitorThreadRunning==True:
+            while self.MonitorThreadRunning == True:
                 try:
                     import socket
                     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -51,7 +62,7 @@ class RG2:
                     data = float(data)
                     self.currentwidth = data
                     connection.close()
-                    self.MonitorThreadRunning=False
+                    self.MonitorThreadRunning = False
                 except Exception as e:
                     print e
                     pass
@@ -67,18 +78,23 @@ class RG2:
         cmd_str += "        socket_send_string(measure_width)\n"
         cmd_str += "    socket_close()\n"
         cmd_str += "end\n"
-        thread = threading.Thread(target=StartBackgroundListenerService,args=())
-        thread.daemon=True
-        self.MonitorThreadRunning=True
+        thread = threading.Thread(target=StartBackgroundListenerService, args=())
+        thread.daemon = True
+        self.MonitorThreadRunning = True
         thread.start()
         self.Robot.send_program(cmd_str)
+	#small delay to wait for the thread
+        time.sleep(0.2)
         return self.currentwidth
 
+
     '''Sets the width of the robot
-	width can be anywhere between 0 and 110, required parameter
+    width can be anywhere between 0 and 110, required parameter
         force can be between 3 and 40, default is 20
     '''
-    def setWidth(self,width,force=20):
+
+
+    def setWidth(self, width, force=20):
         try:
             if width >= 0 and width <= 110 and force >= 3 and force <= 40:
                 progrg2 = ("def rg2grpCntrl():\n")
@@ -226,9 +242,9 @@ class RG2:
                 progrg2 += ("end\n")
                 self.Robot.send_program(progrg2)
             else:
-                self.logger.debug("Width is required to be between 0 and 110")
-                raise RobotException("Please ensure the gripper width is between 0 and 110 and the force is between 3 and 40")
+                self.logger.debug("Width is required to be between 0 and 110 and force is required to be 3 and 40")
+                raise RobotException(
+                    "Please ensure the gripper width is between 0 and 110 and the force is between 3 and 40")
         except:
             raise RobotException("An unexpected error occured")
         return
-
