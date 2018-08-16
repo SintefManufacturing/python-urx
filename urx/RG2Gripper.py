@@ -22,9 +22,8 @@ import time
             Future feautes
 	    While it is possible to currently infer whether the robot is currently holding 
 	    something it would be a beneficial feature to read the force being applied and
-	    return to user grasp success would be a prefered implementation. Unfortunatly
-	    this was unfeasible during the first round at development. It is on the 
-	    horizon but on an unknown timeframe.
+	    return to user grasp success. Unfortunatly this was unfeasible during the first 
+	    round at development. It is on the horizon but on an unknown timeframe.
 
 	    License: LGPL-3.0
 """
