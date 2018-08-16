@@ -123,7 +123,7 @@ urx can also control an RG2 gripper attached to the UR robot. This class was pri
 -You require an ethernet connection to the robot
 '''
 ##Example use:
-
+```python
 import sys
 import urx
 import time
@@ -142,5 +142,6 @@ gripperInstance.setWidth(110)
 time.sleep(2)
 #returns the current width of the robot
 gripperInstance.getWidth()
+```
 	
 
