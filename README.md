@@ -117,11 +117,10 @@ if __name__ == '__main__':
 #RG2 Gripper
 
 urx can also control an RG2 gripper attached to the UR robot. This class was primarily developed by [David Hinwood](https://github.com/u3099811)
-'''
-Additional Notes
-	Gripper will contiously try to close(stopped at the set force value in newtons) if set to a width smaller than the current width while grasping an object. This is part of the design and not 		an error. The same functionality is embedded in the default program
 
-	You require an ethernet connection to the robot
+-Gripper will contiously try to close(stopped at the set force value in newtons) if set to a width smaller than the current width while grasping an object. This is part of the design and not 		an error. The same functionality is embedded in the default program
+
+-You require an ethernet connection to the robot
 '''
 ##Example use:
 
