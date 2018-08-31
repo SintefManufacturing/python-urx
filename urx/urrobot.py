@@ -277,11 +277,11 @@ class URRobot(object):
             self._wait_for_move(joints[:6], threshold=threshold, joints=True)
             return self.getj()
 
-    def movej_to_pose(self, tpose, acc=0.1, vel=0.05, wait=True, relative=False, threshold=None):
+    def movej_to_pose(self, tpose, acc=0.1, vel=0.05, radius=0, wait=True, relative=False, threshold=None):
         if relative:
             l = self.getl()
             tpose = [v + l[i] for i, v in enumerate(tpose)]
-        prog = self._format_move("movej", tpose, acc, vel, prefix="p")
+        prog = self._format_move("movej", tpose, acc, vel, prefix="p", radius=radius)
         print(prog)
         self.send_program(prog)
         if wait:
