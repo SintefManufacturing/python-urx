@@ -351,6 +351,9 @@ class URRobot(object):
             self._wait_for_move(pose_to, threshold=threshold)
             return self.getl()
 
+    def movej_to_pose_list(self, pose_list, acc=0.01, vel=0.01, radius=0.01, wait=True, threshold=None):
+        return self.movexs("movej", pose_list, acc, vel, radius, wait, threshold=threshold)
+
     def movels(self, pose_list, acc=0.01, vel=0.01, radius=0.01, wait=True, threshold=None):
         """
         Concatenate several movel commands and applies a blending radius
@@ -378,6 +381,8 @@ class URRobot(object):
         self.send_program(prog)
         if wait:
             self._wait_for_move(target=pose_list[-1], threshold=threshold)
+            if command == "movej":
+                return self.getj()
             return self.getl()
 
     def stopl(self, acc=0.5):
