@@ -5,7 +5,7 @@ http://support.universal-robots.com/URRobot/RemoteAccess
 """
 
 import logging
-import number
+import numbers
 import collections
 
 from urx import urrtmon
@@ -365,7 +365,7 @@ class URRobot(object):
         end = "end\n"
         prog = header
         # Check if 'vel' is a single number or a sequence.
-        if isinstance(vel, number.Number):
+        if isinstance(vel, numbers.Number):
             # Make 'vel' a sequence
             vel = len(pose_list) * [vel]
         elif not isinstance(vel, collections.Sequence):
@@ -377,20 +377,20 @@ class URRobot(object):
                 'movexs: "vel" must be a number or a list '
                 + 'of numbers the same length as "pose_list"!')
         # Check if 'radius' is a single number.
-        if isinstance(radius, number.Number):
+        if isinstance(radius, numbers.Number):
             # Make 'radius' a sequence
             radius = len(pose_list) * [radius]
         elif not isinstance(radius, collections.Sequence):
             raise RobotException(
                 'movexs: "radius" must be a single number or a sequence!')
+        # Ensure that last pose a stopping pose.
+        radius[-1] = 0.0
         # Require adequate number of radii.
         if len(radius) != len(pose_list):
             raise RobotException(
                 'movexs: "radius" must be a number or a list '
                 + 'of numbers the same length as "pose_list"!')
         for idx, pose in enumerate(pose_list):
-            if idx == (len(pose_list) - 1):
-                radius = 0
             prog += self._format_move(command, pose, acc,
                                       vel[idx], radius[idx],
                                       prefix="p") + "\n"
