@@ -342,6 +342,17 @@ class URRobot(object):
             self._wait_for_move(pose_to, threshold=threshold)
             return self.getl()
 
+    def movejs(self, joint_positions_list, acc=0.01, vel=0.01, radius=0.01,
+               wait=True, threshold=None):
+        """
+        Concatenate several movej commands and applies a blending radius
+        joint_positions_list is a list of joint_positions.
+        This method is usefull since any new command from python
+        to robot make the robot stop
+        """
+        return self.movexs("movej", joint_positions_list, acc, vel, radius,
+                           wait, threshold=threshold)
+
     def movels(self, pose_list, acc=0.01, vel=0.01, radius=0.01,
                wait=True, threshold=None):
         """
@@ -397,7 +408,10 @@ class URRobot(object):
         prog += end
         self.send_program(prog)
         if wait:
-            self._wait_for_move(target=pose_list[-1], threshold=threshold)
+            if command == 'movel':
+                self._wait_for_move(target=pose_list[-1], threshold=threshold, joints=False)
+            elif command == 'movej':
+                self._wait_for_move(target=pose_list[-1], threshold=threshold, joints=True)                
             return self.getl()
 
     def stopl(self, acc=0.5):
