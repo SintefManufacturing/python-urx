@@ -401,10 +401,13 @@ class URRobot(object):
             raise RobotException(
                 'movexs: "radius" must be a number or a list '
                 + 'of numbers the same length as "pose_list"!')
+        prefix = ''
+        if command in ['movel', 'movec']:
+            prefix = 'p'
         for idx, pose in enumerate(pose_list):
             prog += self._format_move(command, pose, acc,
                                       vel[idx], radius[idx],
-                                      prefix="p") + "\n"
+                                      prefix=prefix) + "\n"
         prog += end
         self.send_program(prog)
         if wait:
