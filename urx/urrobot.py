@@ -350,7 +350,7 @@ class URRobot(object):
         This method is usefull since any new command from python
         to robot make the robot stop
         """
-        return self.movexs("movej", joint_positions_list, acc, vel, radius,
+        return URRobot.movexs(self, "movej", joint_positions_list, acc, vel, radius,
                            wait, threshold=threshold)
 
     def movels(self, pose_list, acc=0.01, vel=0.01, radius=0.01,
