@@ -1,5 +1,6 @@
 
 from urx.urscript import URScript
+import math
 import time
 import os
 
@@ -259,4 +260,14 @@ class OnRobotGripperRG2(object):
         self.robot.send_program(urscript())
         time.sleep(wait)
 
+	@property.getter
+	def width(self):
+		zscale = (self.robot.get_analog_in(2) - 0.026) / 2.9760034
+		zangle = zscale * 1.57079633 + -0.08726646
+		zwidth = 5.0 + 110 * math.sin(zangle)
+		measure_width = (math.floor(zwidth * 10)) / 10 - 9.2
+		return measure_width
 
+	@property.getter
+	def object_gripped(self):
+		return self.robot.get_digital_in(16)

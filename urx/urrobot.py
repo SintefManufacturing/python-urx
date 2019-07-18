@@ -422,16 +422,10 @@ class URRobot(object):
         prog += end
         self.send_program(prog)
         if wait:
-<<<<<<< HEAD
             if command == 'movel':
                 self._wait_for_move(target=pose_list[-1], threshold=threshold, joints=False)
             elif command == 'movej':
                 self._wait_for_move(target=pose_list[-1], threshold=threshold, joints=True)                
-=======
-            self._wait_for_move(target=pose_list[-1], threshold=threshold)
-            if command == "movej":
-                return self.getj()
->>>>>>> 7757f3c3681261fb475eb279699a843c6f987508
             return self.getl()
 
     def stopl(self, acc=0.5):
