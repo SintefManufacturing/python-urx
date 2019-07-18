@@ -109,13 +109,13 @@ if __name__ == '__main__':
     rob = urx.Robot("192.168.0.100")
     robotiqgrip = Robotiq_Two_Finger_Gripper()
 
-    if(len(sys.argv) != 2):
+    if len(sys.argv) != 2:
         print "false"
         sys.exit()
 
-    if(sys.argv[1] == "close") :
+    if sys.argv[1] == "close":
         robotiqgrip.close_gripper()
-    if(sys.argv[1] == "open") :
+    if sys.argv[1] == "open":
         robotiqgrip.open_gripper()
 
     rob.send_program(robotiqgrip.ret_program_to_run())
@@ -129,7 +129,7 @@ if __name__ == '__main__':
 
 urx can control an RG2 gripper as well. The class was primarily developed by [Moritz Fey](https://github.com/Mofeywalker).
 
-### Example use:?>
+### Example use:
 
 ```python
 import sys
@@ -138,18 +138,16 @@ from urx.gripper import OnRobotGripperRG2
 
 if __name__ == '__main__':
     rob = urx.Robot("192.168.0.100")
-    gripper = OnRobotGripperRG2()
+    gripper = OnRobotGripperRG2(rob)
 
-    if(len(sys.argv) != 2):
+    if len(sys.argv) != 2:
         print "false"
         sys.exit()
 
-    if(sys.argv[1] == "close") :
+    if sys.argv[1] == "close":
         gripper.close_gripper()
-    if(sys.argv[1] == "open") :
+    if sys.argv[1] == "open":
         gripper.open_gripper()
-
-    rob.send_program(robotiqgrip.ret_program_to_run())
 
     rob.close()
     print "true"
