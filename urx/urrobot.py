@@ -5,6 +5,8 @@ http://support.universal-robots.com/URRobot/RemoteAccess
 """
 
 import logging
+import numbers
+import collections
 
 from urx import urrtmon
 from urx import ursecmon
@@ -351,19 +353,30 @@ class URRobot(object):
             self._wait_for_move(pose_to, threshold=threshold)
             return self.getl()
 
-    def movej_to_pose_list(self, pose_list, acc=0.01, vel=0.01, radius=0.01, wait=True, threshold=None):
-        return self.movexs("movej", pose_list, acc, vel, radius, wait, threshold=threshold)
+    def movejs(self, joint_positions_list, acc=0.01, vel=0.01, radius=0.01,
+               wait=True, threshold=None):
+        """
+        Concatenate several movej commands and applies a blending radius
+        joint_positions_list is a list of joint_positions.
+        This method is usefull since any new command from python
+        to robot make the robot stop
+        """
+        return URRobot.movexs(self, "movej", joint_positions_list, acc, vel, radius,
+                           wait, threshold=threshold)
 
-    def movels(self, pose_list, acc=0.01, vel=0.01, radius=0.01, wait=True, threshold=None):
+    def movels(self, pose_list, acc=0.01, vel=0.01, radius=0.01,
+               wait=True, threshold=None):
         """
         Concatenate several movel commands and applies a blending radius
         pose_list is a list of pose.
         This method is usefull since any new command from python
         to robot make the robot stop
         """
-        return self.movexs("movel", pose_list, acc, vel, radius, wait, threshold=threshold)
+        return self.movexs("movel", pose_list, acc, vel, radius,
+                           wait, threshold=threshold)
 
-    def movexs(self, command, pose_list, acc=0.01, vel=0.01, radius=0.01, wait=True, threshold=None):
+    def movexs(self, command, pose_list, acc=0.01, vel=0.01, radius=0.01,
+               wait=True, threshold=None):
         """
         Concatenate several movex commands and applies a blending radius
         pose_list is a list of pose.
@@ -373,16 +386,46 @@ class URRobot(object):
         header = "def myProg():\n"
         end = "end\n"
         prog = header
+        # Check if 'vel' is a single number or a sequence.
+        if isinstance(vel, numbers.Number):
+            # Make 'vel' a sequence
+            vel = len(pose_list) * [vel]
+        elif not isinstance(vel, collections.Sequence):
+            raise RobotException(
+                'movexs: "vel" must be a single number or a sequence!')
+        # Check for adequate number of speeds
+        if len(vel) != len(pose_list):
+            raise RobotException(
+                'movexs: "vel" must be a number or a list '
+                + 'of numbers the same length as "pose_list"!')
+        # Check if 'radius' is a single number.
+        if isinstance(radius, numbers.Number):
+            # Make 'radius' a sequence
+            radius = len(pose_list) * [radius]
+        elif not isinstance(radius, collections.Sequence):
+            raise RobotException(
+                'movexs: "radius" must be a single number or a sequence!')
+        # Ensure that last pose a stopping pose.
+        radius[-1] = 0.0
+        # Require adequate number of radii.
+        if len(radius) != len(pose_list):
+            raise RobotException(
+                'movexs: "radius" must be a number or a list '
+                + 'of numbers the same length as "pose_list"!')
+        prefix = ''
+        if command in ['movel', 'movec']:
+            prefix = 'p'
         for idx, pose in enumerate(pose_list):
-            if idx == (len(pose_list) - 1):
-                radius = 0
-            prog += self._format_move(command, pose, acc, vel, radius, prefix="p") + "\n"
+            prog += self._format_move(command, pose, acc,
+                                      vel[idx], radius[idx],
+                                      prefix=prefix) + "\n"
         prog += end
         self.send_program(prog)
         if wait:
-            self._wait_for_move(target=pose_list[-1], threshold=threshold)
-            if command == "movej":
-                return self.getj()
+            if command == 'movel':
+                self._wait_for_move(target=pose_list[-1], threshold=threshold, joints=False)
+            elif command == 'movej':
+                self._wait_for_move(target=pose_list[-1], threshold=threshold, joints=True)                
             return self.getl()
 
     def stopl(self, acc=0.5):

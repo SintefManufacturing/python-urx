@@ -1,5 +1,6 @@
 
 from urx.urscript import URScript
+import math
 import time
 import os
 
@@ -152,17 +153,6 @@ boilerplate =  """
   	    break
   	  end
   	  timeout=timeout+1
-  	#  servoj(get_inverse_kin(target_pose), t=0.008, lookahead_time=0.033, gain=1500)
-  	#  textmsg(point_dist(target_pose, get_forward_kin()))
-  	#end
-  	#textmsg("end gripper move!!!!!")
-  	#nspeedthr = 0.001
-  	#nspeed = norm(get_actual_tcp_speed())
-  	#while nspeed > nspeedthr:
-  	#  servoj(get_inverse_kin(target_pose), t=0.008, lookahead_time=0.033, gain=1500)
-  	#  nspeed = norm(get_actual_tcp_speed())
-  	#  textmsg(point_dist(target_pose, get_forward_kin()))
-  	#end
   	servoj(get_inverse_kin(target_pose),0,0,0.008,0.01,2000)
   	if point_dist(target_pose, get_forward_kin()) > 0.005:
   	popup("Lower grasping force or max width",title="RG-lag threshold exceeded", warning=False, error=False, blocking=False)
@@ -270,4 +260,14 @@ class OnRobotGripperRG2(object):
         self.robot.send_program(urscript())
         time.sleep(wait)
 
+	@property.getter
+	def width(self):
+		zscale = (self.robot.get_analog_in(2) - 0.026) / 2.9760034
+		zangle = zscale * 1.57079633 + -0.08726646
+		zwidth = 5.0 + 110 * math.sin(zangle)
+		measure_width = (math.floor(zwidth * 10)) / 10 - 9.2
+		return measure_width
 
+	@property.getter
+	def object_gripped(self):
+		return self.robot.get_digital_in(16)
