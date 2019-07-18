@@ -152,17 +152,6 @@ boilerplate =  """
   	    break
   	  end
   	  timeout=timeout+1
-  	#  servoj(get_inverse_kin(target_pose), t=0.008, lookahead_time=0.033, gain=1500)
-  	#  textmsg(point_dist(target_pose, get_forward_kin()))
-  	#end
-  	#textmsg("end gripper move!!!!!")
-  	#nspeedthr = 0.001
-  	#nspeed = norm(get_actual_tcp_speed())
-  	#while nspeed > nspeedthr:
-  	#  servoj(get_inverse_kin(target_pose), t=0.008, lookahead_time=0.033, gain=1500)
-  	#  nspeed = norm(get_actual_tcp_speed())
-  	#  textmsg(point_dist(target_pose, get_forward_kin()))
-  	#end
   	servoj(get_inverse_kin(target_pose),0,0,0.008,0.01,2000)
   	if point_dist(target_pose, get_forward_kin()) > 0.005:
   	popup("Lower grasping force or max width",title="RG-lag threshold exceeded", warning=False, error=False, blocking=False)
