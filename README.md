@@ -1,4 +1,6 @@
 
+**** This repository is no longer maintained ****
+
 urx is a python library to control the robots from 'Universal robot'. It is published under the GPL license and comes with absolutely no guarantee.
 
 It is meant as an easy to use module for pick and place operations, although it has been used for welding and other sensor based applications that do not require high control frequency.
