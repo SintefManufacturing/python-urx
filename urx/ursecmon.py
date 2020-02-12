@@ -252,7 +252,11 @@ class SecondaryMonitor(Thread):
         self.lastpacket_timestamp = 0
 
         self.start()
-        self.wait()  # make sure we got some data before someone calls us
+        try:
+            self.wait()  # make sure we got some data before someone calls us
+        except TimeoutException as ex:
+            self.close()
+            raise ex
 
     def send_program(self, prog):
         """
