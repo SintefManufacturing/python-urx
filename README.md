@@ -32,21 +32,21 @@ rob.movel((0.1, 0, 0, 0, 0, 0), a, v, relative=true)  # move relative to current
 rob.translate((0.1, 0, 0), a, v)  #move tool and keep orientation
 rob.stopj(a)
 
-robot.movel(x, y, z, rx, ry, rz), wait=False)
+rob.movel(x, y, z, rx, ry, rz), wait=False)
 while True :
     sleep(0.1)  #sleep first since the robot may not have processed the command yet
-    if robot.is_program_running():
+    if rob.is_program_running():
         break
 
-robot.movel(x, y, z, rx, ry, rz), wait=False)
-while.robot.getForce() < 50:
+rob.movel(x, y, z, rx, ry, rz), wait=False)
+while rob.getForce() < 50:
     sleep(0.01)
-    if not robot.is_program_running():
+    if not rob.is_program_running():
         break
-robot.stopl()
+rob.stopl()
 
 try:
-    robot.movel((0,0,0.1,0,0,0), relative=True)
+    rob.movel((0,0,0.1,0,0,0), relative=True)
 except RobotError, ex:
     print("Robot could not execute move (emergency stop for example), do something", ex)
 ```
