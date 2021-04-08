@@ -104,6 +104,13 @@ class URRobot(object):
             force += i**2
         return force**0.5
 
+    def get_joint_current(self, wait=True):
+        """
+        return measured joint current
+        if wait==True, waits for next packet before returning
+        """
+        return self.rtmon.getJOINTCurrent(wait)
+
     def set_tcp(self, tcp):
         """
         set robot flange to tool tip transformation

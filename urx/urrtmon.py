@@ -47,6 +47,7 @@ class URRTMonitor(threading.Thread):
         self._qTarget = None
         self._tcp = None
         self._tcp_force = None
+        self._joint_current = None
         self.__recvTime = 0
         self._last_ctrl_ts = 0
         # self._last_ts = 0
@@ -140,6 +141,18 @@ class URRTMonitor(threading.Thread):
                 return tcf_force
     getTCFForce = tcf_force
 
+    def joint_current(self, wait=False, timestamp=False):
+        """ Get the joint current."""
+        if wait:
+            self.wait()
+        with self._dataAccess:
+            joint_current = self._joint_current
+            if timestamp:
+                return self._timestamp, joint_current
+            else:
+                return joint_current
+    getJOINTCurrent = joint_current
+
     def __recv_rt_data(self):
         head = self.__recv_bytes(4)
         # Record the timestamp for this logical package
@@ -178,6 +191,7 @@ class URRTMonitor(threading.Thread):
             self._qTarget = np.array(unp[1:7])
             self._tcp_force = np.array(unp[67:73])
             self._tcp = np.array(unp[73:79])
+            self._joint_current = np.array(unp[43:49])
 
             if self._csys:
                 with self._csys_lock:
@@ -245,7 +259,8 @@ class URRTMonitor(threading.Thread):
                 qActual=self._qActual,
                 qTarget=self._qTarget,
                 tcp=self._tcp,
-                tcp_force=self._tcp_force)
+                tcp_force=self._tcp_force,
+                joint_current=self._joint_current)
 
     def stop(self):
         # print(self.__class__.__name__+': Stopping')
