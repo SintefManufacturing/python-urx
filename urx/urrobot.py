@@ -31,9 +31,10 @@ class URRobot(object):
     Rmq: A program sent to the robot i executed immendiatly and any running program is stopped
     """
 
-    def __init__(self, host, use_rt=False):
+    def __init__(self, host, use_rt=False, urFirm=None):
         self.logger = logging.getLogger("urx")
         self.host = host
+        self.urFirm = urFirm
         self.csys = None
 
         self.logger.debug("Opening secondary monitor socket")
@@ -104,12 +105,55 @@ class URRobot(object):
             force += i**2
         return force**0.5
 
+    def get_joint_temperature(self, wait=True):
+        """
+        return measured joint temperature
+        if wait==True, waits for next packet before returning
+        """
+        return self.rtmon.getJOINTTemperature(wait)
+    
+    def get_joint_voltage(self, wait=True):
+        """
+        return measured joint voltage
+        if wait==True, waits for next packet before returning
+        """
+        return self.rtmon.getJOINTVoltage(wait)
+    
     def get_joint_current(self, wait=True):
         """
         return measured joint current
         if wait==True, waits for next packet before returning
         """
         return self.rtmon.getJOINTCurrent(wait)
+    
+    def get_main_voltage(self, wait=True):
+        """
+        return measured Safety Control Board: Main voltage
+        if wait==True, waits for next packet before returning
+        """
+        return self.rtmon.getMAINVoltage(wait)
+
+    def get_robot_voltage(self, wait=True):
+        """
+        return measured Safety Control Board: Robot voltage (48V)
+        if wait==True, waits for next packet before returning
+        """
+        return self.rtmon.getROBOTVoltage(wait)
+
+    def get_robot_current(self, wait=True):
+        """
+        return measured Safety Control Board: Robot current
+        if wait==True, waits for next packet before returning
+        """
+        return self.rtmon.getROBOTCurrent(wait)
+
+    def get_all_rt_data(self, wait=True):
+        """
+        return all data parsed from robot real-time interace as a dict
+        if wait==True, waits for next packet before returning
+        """
+        return self.rtmon.getALLData(wait)
+
 
     def set_tcp(self, tcp):
         """
@@ -468,7 +512,7 @@ class URRobot(object):
         """
         if not self.rtmon:
             self.logger.info("Opening real-time monitor socket")
-            self.rtmon = urrtmon.URRTMonitor(self.host)  # som information is only available on rt interface
+            self.rtmon = urrtmon.URRTMonitor(self.host, self.urFirm)  # som information is only available on rt interface
             self.rtmon.start()
         self.rtmon.set_csys(self.csys)
         return self.rtmon
