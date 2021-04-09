@@ -30,7 +30,9 @@ class URRTMonitor(threading.Thread):
     # pose is not included!
     rtstruct540 = struct.Struct('>d6d6d6d6d6d6d6d6d18d')
 
-    def __init__(self, urHost):
+    rtstruct5_1 = struct.Struct('>d1d6d6d6d6d6d6d6d6d6d6d6d6d6d6d1d6d1d1d1d6d1d6d3d6d1d1d1d1d1d1d1d6d1d1d3d3d')
+
+    def __init__(self, urHost, urFirm=None):
         threading.Thread.__init__(self)
         self.logger = logging.getLogger(self.__class__.__name__)
         self.daemon = True
@@ -40,6 +42,7 @@ class URRTMonitor(threading.Thread):
         self._rtSock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self._rtSock.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
         self._urHost = urHost
+        self.urFirm = urFirm
         # Package data variables
         self._timestamp = None
         self._ctrlTimestamp = None
@@ -47,7 +50,12 @@ class URRTMonitor(threading.Thread):
         self._qTarget = None
         self._tcp = None
         self._tcp_force = None
+        self._joint_temperature = None
+        self._joint_voltage = None
         self._joint_current = None
+        self._main_voltage = None
+        self._robot_voltage = None
+        self._robot_current = None
         self.__recvTime = 0
         self._last_ctrl_ts = 0
         # self._last_ts = 0
@@ -141,6 +149,30 @@ class URRTMonitor(threading.Thread):
                 return tcf_force
     getTCFForce = tcf_force
 
+    def joint_temperature(self, wait=False, timestamp=False):
+        """ Get the joint temperature."""
+        if wait:
+            self.wait()
+        with self._dataAccess:
+            joint_temperature = self._joint_temperature
+            if timestamp:
+                return self._timestamp, joint_temperature
+            else:
+                return joint_temperature
+    getJOINTTemperature = joint_temperature
+
+    def joint_voltage(self, wait=False, timestamp=False):
+        """ Get the joint voltage."""
+        if wait:
+            self.wait()
+        with self._dataAccess:
+            joint_voltage = self._joint_voltage
+            if timestamp:
+                return self._timestamp, joint_voltage
+            else:
+                return joint_voltage
+    getJOINTVoltage = joint_voltage
+
     def joint_current(self, wait=False, timestamp=False):
         """ Get the joint current."""
         if wait:
@@ -153,6 +185,42 @@ class URRTMonitor(threading.Thread):
                 return joint_current
     getJOINTCurrent = joint_current
 
+    def main_voltage(self, wait=False, timestamp=False):
+        """ Get the Safety Control Board: Main voltage."""
+        if wait:
+            self.wait()
+        with self._dataAccess:
+            main_voltage = self._main_voltage
+            if timestamp:
+                return self._timestamp, main_voltage
+            else:
+                return main_voltage
+    getMAINVoltage = main_voltage
+
+    def robot_voltage(self, wait=False, timestamp=False):
+        """ Get the Safety Control Board: Robot voltage (48V)."""
+        if wait:
+            self.wait()
+        with self._dataAccess:
+            robot_voltage = self._robot_voltage
+            if timestamp:
+                return self._timestamp, robot_voltage
+            else:
+                return robot_voltage
+    getROBOTVoltage = robot_voltage
+
+    def robot_current(self, wait=False, timestamp=False):
+        """ Get the Safety Control Board: Robot current."""
+        if wait:
+            self.wait()
+        with self._dataAccess:
+            robot_current = self._robot_current
+            if timestamp:
+                return self._timestamp, robot_current
+            else:
+                return robot_current
+    getROBOTCurrent = robot_current
+
     def __recv_rt_data(self):
         head = self.__recv_bytes(4)
         # Record the timestamp for this logical package
@@ -162,15 +230,20 @@ class URRTMonitor(threading.Thread):
             'Received header telling that package is %s bytes long',
             pkgsize)
         payload = self.__recv_bytes(pkgsize - 4)
-        if pkgsize >= 692:
-            unp = self.rtstruct692.unpack(payload[:self.rtstruct692.size])
-        elif pkgsize >= 540:
-            unp = self.rtstruct540.unpack(payload[:self.rtstruct540.size])
+        if self.urFirm is not None:
+            if self.urFirm == 5.1:
+                unp = self.rtstruct5_1.unpack(payload[:self.rtstruct5_1.size])
         else:
-            self.logger.warning(
-                'Error, Received packet of length smaller than 540: %s ',
-                pkgsize)
-            return
+            if pkgsize >= 692:
+                unp = self.rtstruct692.unpack(payload[:self.rtstruct692.size])
+            elif pkgsize >= 540:
+                unp = self.rtstruct540.unpack(payload[:self.rtstruct540.size])
+            else:
+                self.logger.warning(
+                    'Error, Received packet of length smaller than 540: %s ',
+                    pkgsize)
+                return
+        
 
         with self._dataAccess:
             self._timestamp = timestamp
@@ -190,8 +263,14 @@ class URRTMonitor(threading.Thread):
             self._qdActual = np.array(unp[37:43])
             self._qTarget = np.array(unp[1:7])
             self._tcp_force = np.array(unp[67:73])
-            self._tcp = np.array(unp[73:79])
+            self._tcp = np.array(unp[73:79])            
             self._joint_current = np.array(unp[43:49])
+            if self.urFirm >= 3.1:
+                self._joint_temperature = np.array(unp[86:92])
+                self._joint_voltage = np.array(unp[124:130])
+                self._main_voltage = unp[121]
+                self._robot_voltage = unp[122]
+                self._robot_current = unp[123]
 
             if self._csys:
                 with self._csys_lock:
@@ -260,7 +339,13 @@ class URRTMonitor(threading.Thread):
                 qTarget=self._qTarget,
                 tcp=self._tcp,
                 tcp_force=self._tcp_force,
-                joint_current=self._joint_current)
+                joint_temperature=self._joint_temperature,
+                joint_voltage=self._joint_voltage,
+                joint_current=self._joint_current,
+                main_voltage=self._main_voltage,
+                robot_voltage=self._robot_voltage,
+                robot_current=self._robot_current)
+    getALLData = get_all_data
 
     def stop(self):
         # print(self.__class__.__name__+': Stopping')
