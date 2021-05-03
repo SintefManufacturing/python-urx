@@ -56,6 +56,8 @@ class URRTMonitor(threading.Thread):
         self._main_voltage = None
         self._robot_voltage = None
         self._robot_current = None
+        self._elbow_position = None
+        self._elbow_velocity = None
         self.__recvTime = 0
         self._last_ctrl_ts = 0
         # self._last_ts = 0
@@ -221,6 +223,30 @@ class URRTMonitor(threading.Thread):
                 return robot_current
     getROBOTCurrent = robot_current
 
+    def elbow_position(self, wait=False, timestamp=False):
+        """ Get the elbow position."""
+        if wait:
+            self.wait()
+        with self._dataAccess:
+            elbow_position = self._elbow_position
+            if timestamp:
+                return self._timestamp, elbow_position
+            else:
+                return elbow_position
+    getELBOWPosition = elbow_position
+
+    def elbow_velocity(self, wait=False, timestamp=False):
+        """ Get the elbow position."""
+        if wait:
+            self.wait()
+        with self._dataAccess:
+            elbow_velocity = self._elbow_velocity
+            if timestamp:
+                return self._timestamp, elbow_velocity
+            else:
+                return elbow_velocity
+    getELBOWVelocity = elbow_velocity
+
     def __recv_rt_data(self):
         head = self.__recv_bytes(4)
         # Record the timestamp for this logical package
@@ -271,6 +297,8 @@ class URRTMonitor(threading.Thread):
                 self._main_voltage = unp[121]
                 self._robot_voltage = unp[122]
                 self._robot_current = unp[123]
+                self._elbow_position = unp[132:135]
+                self._elbow_velocity = unp[135:138]
 
             if self._csys:
                 with self._csys_lock:
@@ -332,7 +360,8 @@ class URRTMonitor(threading.Thread):
         if wait:
             self.wait()
         with self._dataAccess:
-            return dict(
+            if self.urFirm >= 5.1:
+                return dict(
                 timestamp=self._timestamp,
                 ctrltimestamp=self._ctrlTimestamp,
                 qActual=self._qActual,
@@ -344,7 +373,19 @@ class URRTMonitor(threading.Thread):
                 joint_current=self._joint_current,
                 main_voltage=self._main_voltage,
                 robot_voltage=self._robot_voltage,
-                robot_current=self._robot_current)
+                robot_current=self._robot_current,
+                elbow_position=self._elbow_position,
+                elbow_velocity=self._elbow_velocity)
+            else:
+                return  dict(
+                timestamp=self._timestamp,
+                ctrltimestamp=self._ctrlTimestamp,
+                qActual=self._qActual,
+                qTarget=self._qTarget,
+                tcp=self._tcp,
+                tcp_force=self._tcp_force)
+
+            
     getALLData = get_all_data
 
     def stop(self):

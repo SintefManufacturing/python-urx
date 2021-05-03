@@ -147,6 +147,18 @@ class URRobot(object):
         """
         return self.rtmon.getROBOTCurrent(wait)
 
+    def get_elbow_position(self, wait=True):
+        """
+        return elbow position
+        """
+        return self.rtmon.getELBOWPosition(wait)
+    
+    def get_elbow_velocity(self, wait=True):
+        """
+        return elbow velocity
+        """
+        return self.rtmon.getELBOWVelocity(wait)
+
     def get_all_rt_data(self, wait=True):
         """
         return all data parsed from robot real-time interace as a dict
