@@ -84,12 +84,6 @@ class URScript(object):
         msg = "set_analog_output({}, {})".format(input_id, signal_level)
         self.add_line_to_program(msg)
 
-    def _set_standard_analog_output(self, input_id, signal_level):
-        assert(input_id in [0, 1])
-        assert(signal_level in [0, 1])
-        msg = "set_standard_analog_output({}, {})".format(input_id, signal_level)
-        self.add_line_to_program(msg)
-
     def _set_analog_outputdomain(self, port, domain):
         assert(domain in OUTPUT_DOMAIN_VOLTAGE)
         msg = "set_analog_outputdomain({},{})".format(port, domain)

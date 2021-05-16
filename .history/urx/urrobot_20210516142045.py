@@ -246,13 +246,6 @@ class URRobot(object):
         """
         prog = "set_analog_out(%s, %s)" % (output, val)
         self.send_program(prog)
-        
-    def set_standard_analog_out(self, output, val):
-        """
-        set analog output, val is a float
-        """
-        prog = "set_standard_analog_out(%s, %s)" % (output, val)
-        self.send_program(prog)
 
     def set_tool_voltage(self, val):
         """

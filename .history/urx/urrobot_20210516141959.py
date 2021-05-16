@@ -71,7 +71,6 @@ class URRobot(object):
         return self.secmon.running
 
     def is_protective_stopped(self):
-        ''' cehck if robot is protective stopped. This was called the safetyStopped'''
         return self.secmon.is_protective_stopped()
 
     def is_program_running(self):
@@ -245,13 +244,6 @@ class URRobot(object):
         set analog output, val is a float
         """
         prog = "set_analog_out(%s, %s)" % (output, val)
-        self.send_program(prog)
-        
-    def set_standard_analog_out(self, output, val):
-        """
-        set analog output, val is a float
-        """
-        prog = "set_standard_analog_out(%s, %s)" % (output, val)
         self.send_program(prog)
 
     def set_tool_voltage(self, val):
