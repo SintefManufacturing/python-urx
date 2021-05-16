@@ -7,7 +7,7 @@ __copyright__ = "Copyright 2011-2013, Sintef Raufoss Manufacturing"
 __credits__ = ["Olivier Roulet-Dubonnet"]
 __license__ = "LGPLv3"
 
-# Rewritten for version 5.8 by Byeongdu Lee, 2/15/2021
+# Codes for version 5.8 are added by Byeongdu Lee, 2/15/2021
 
 class ParsingException(Exception):
 
