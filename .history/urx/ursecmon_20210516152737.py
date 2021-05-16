@@ -293,7 +293,7 @@ class SecondaryMonitor(Thread):
         if wait:
             self.wait()
         with self._dictLock:
-            if self._parser.version >= (5, 8):
+            if self._parser.version >= (5,8):
                 val = self.secmon._dict["RobotModeData"]["isProtectiveStopped"]
             else:
                 val = self.secmon._dict["RobotModeData"]["isSecurityStopped"]

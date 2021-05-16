@@ -71,7 +71,7 @@ class ParserUtils(object):
                 else:
                     allData["CartesianInfo"] = self._get_data(pdata, "iBdddddddddddd", ("size", "type", "X", "Y", "Z", "Rx", "Ry", "Rz", "tcpOffsetX", "tcpOffsetY", "tcpOffsetZ", "tcpOffsetRx", "tcpOffsetRy", "tcpOffsetRz"))
             elif ptype == 5:
-                if self.version < (5, 8):
+                if self.version < (5.8):
                     allData["LaserPointer(OBSOLETE)"] = self._get_data(pdata, "iBddd", ("size", "type"))
                 else:
                     allData["KinematicsInfo"] = self._get_data(pdata, "!iBLLLLLL dddddd dddddd dddddd dddddd L", ("size", "type",
@@ -112,9 +112,9 @@ class ParserUtils(object):
                 tmp = self._get_data(pdata, "!iBQbb", ("size", "type", "timestamp", "source", "robotMessageType"))
                 if tmp["robotMessageType"] == 3:
                     allData["VersionMessage"] = self._get_data(pdata, "!iBQbbbA BBiiA", ("size", "type", "timestamp", "source", "robotMessageType", "projectNameSize", "projectName", "majorVersion", "minorVersion", "bugfixVersion", "buildNumber", "buildDate"))
-                    self.version = (allData["VersionMessage"]["majorVersion"], allData["VersionMessage"]["minorVersion"]) 
-                    return allData  # version info is only at the first packet.
-                if self.version < (5, 8):
+                if not hasattr(self, 'version'):
+                    self.version = (0,0)
+                if self.version < (5,8):
                     # if tmp["robotMessageType"] == 3:
                     #     allData["VersionMessage"] = self._get_data(pdata, "!iBQbbbA bBBiAb", ("size", "type", "timestamp", "source", "robotMessageType", "projectNameSize", "projectName", "majorVersion", "minorVersion", "svnRevision", "buildDate"))
                     if tmp["robotMessageType"] == 6:

@@ -110,10 +110,12 @@ class ParserUtils(object):
                 # this is for version 5.8
                 self.logger.info("ptype 20 is read.")
                 tmp = self._get_data(pdata, "!iBQbb", ("size", "type", "timestamp", "source", "robotMessageType"))
+                # if tmp["robotMessageType"] == 3:
+                #     allData["VersionMessage"] = self._get_data(pdata, "!iBQbbbA BBiiA", ("size", "type", "timestamp", "source", "robotMessageType", "projectNameSize", "projectName", "majorVersion", "minorVersion", "bugfixVersion", "buildNumber", "buildDate"))
                 if tmp["robotMessageType"] == 3:
-                    allData["VersionMessage"] = self._get_data(pdata, "!iBQbbbA BBiiA", ("size", "type", "timestamp", "source", "robotMessageType", "projectNameSize", "projectName", "majorVersion", "minorVersion", "bugfixVersion", "buildNumber", "buildDate"))
-                    self.version = (allData["VersionMessage"]["majorVersion"], allData["VersionMessage"]["minorVersion"]) 
-                    return allData  # version info is only at the first packet.
+                    allData["VersionMessage"] = self._get_data(pdata, "!iBQbbbA bBBiAb", ("size", "type", "timestamp", "source", "robotMessageType", "projectNameSize", "projectName", "majorVersion", "minorVersion", "svnRevision", "buildDate"))
+                if not hasattr(self, 'version'):
+                    self.version = (0, 0)
                 if self.version < (5, 8):
                     # if tmp["robotMessageType"] == 3:
                     #     allData["VersionMessage"] = self._get_data(pdata, "!iBQbbbA bBBiAb", ("size", "type", "timestamp", "source", "robotMessageType", "projectNameSize", "projectName", "majorVersion", "minorVersion", "svnRevision", "buildDate"))

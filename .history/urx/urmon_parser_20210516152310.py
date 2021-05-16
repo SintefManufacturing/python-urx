@@ -71,7 +71,7 @@ class ParserUtils(object):
                 else:
                     allData["CartesianInfo"] = self._get_data(pdata, "iBdddddddddddd", ("size", "type", "X", "Y", "Z", "Rx", "Ry", "Rz", "tcpOffsetX", "tcpOffsetY", "tcpOffsetZ", "tcpOffsetRx", "tcpOffsetRy", "tcpOffsetRz"))
             elif ptype == 5:
-                if self.version < (5, 8):
+                if self.version < (5.8):
                     allData["LaserPointer(OBSOLETE)"] = self._get_data(pdata, "iBddd", ("size", "type"))
                 else:
                     allData["KinematicsInfo"] = self._get_data(pdata, "!iBLLLLLL dddddd dddddd dddddd dddddd L", ("size", "type",
@@ -110,14 +110,10 @@ class ParserUtils(object):
                 # this is for version 5.8
                 self.logger.info("ptype 20 is read.")
                 tmp = self._get_data(pdata, "!iBQbb", ("size", "type", "timestamp", "source", "robotMessageType"))
-                if tmp["robotMessageType"] == 3:
-                    allData["VersionMessage"] = self._get_data(pdata, "!iBQbbbA BBiiA", ("size", "type", "timestamp", "source", "robotMessageType", "projectNameSize", "projectName", "majorVersion", "minorVersion", "bugfixVersion", "buildNumber", "buildDate"))
-                    self.version = (allData["VersionMessage"]["majorVersion"], allData["VersionMessage"]["minorVersion"]) 
-                    return allData  # version info is only at the first packet.
-                if self.version < (5, 8):
-                    # if tmp["robotMessageType"] == 3:
-                    #     allData["VersionMessage"] = self._get_data(pdata, "!iBQbbbA bBBiAb", ("size", "type", "timestamp", "source", "robotMessageType", "projectNameSize", "projectName", "majorVersion", "minorVersion", "svnRevision", "buildDate"))
-                    if tmp["robotMessageType"] == 6:
+                if self.version < (5.8):
+                    if tmp["robotMessageType"] == 3:
+                        allData["VersionMessage"] = self._get_data(pdata, "!iBQbbbA bBBiAb", ("size", "type", "timestamp", "source", "robotMessageType", "projectNameSize", "projectName", "majorVersion", "minorVersion", "svnRevision", "buildDate"))
+                    elif tmp["robotMessageType"] == 6:
                         allData["robotCommMessage"] = self._get_data(pdata, "!iBQbb iiAc", ("size", "type", "timestamp", "source", "robotMessageType", "code", "argument", "messageText"))
                     elif tmp["robotMessageType"] == 1:
                         allData["labelMessage"] = self._get_data(pdata, "!iBQbb iAc", ("size", "type", "timestamp", "source", "robotMessageType", "id", "messageText"))
@@ -134,9 +130,9 @@ class ParserUtils(object):
                     else:
                         self.logger.debug("Message type parser not implemented %s", tmp)
                 else:
-                    # if tmp["robotMessageType"] == 3:
-                    #     allData["VersionMessage"] = self._get_data(pdata, "!iBQbbbA BBiiA", ("size", "type", "timestamp", "source", "robotMessageType", "projectNameSize", "projectName", "majorVersion", "minorVersion", "bugfixVersion", "buildNumber", "buildDate"))
-                    if tmp["robotMessageType"] == 6:
+                    if tmp["robotMessageType"] == 3:
+                        allData["VersionMessage"] = self._get_data(pdata, "!iBQbbbA BBiiA", ("size", "type", "timestamp", "source", "robotMessageType", "projectNameSize", "projectName", "majorVersion", "minorVersion", "bugfixVersion", "buildNumber", "buildDate"))
+                    elif tmp["robotMessageType"] == 6:
                         allData["robotCommMessage"] = self._get_data(pdata, "!iBQbbiiiLLA", ("size", "type", "timestamp", "source", "robotMessageType", "code", "argument", "level", "datatype", "data", "messageText"))
                     elif tmp["robotMessageType"] == 2:
                         allData["popupMessage"] = self._get_data(pdata, "!iBQbbIB???HA A", ("size", "type", "timestamp", "source", "robotMessageType", "id", "type", "warning", "error", "blocking", "titleSize", "messageTitle", "messageText"))

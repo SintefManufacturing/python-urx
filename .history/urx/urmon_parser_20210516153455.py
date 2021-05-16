@@ -113,7 +113,6 @@ class ParserUtils(object):
                 if tmp["robotMessageType"] == 3:
                     allData["VersionMessage"] = self._get_data(pdata, "!iBQbbbA BBiiA", ("size", "type", "timestamp", "source", "robotMessageType", "projectNameSize", "projectName", "majorVersion", "minorVersion", "bugfixVersion", "buildNumber", "buildDate"))
                     self.version = (allData["VersionMessage"]["majorVersion"], allData["VersionMessage"]["minorVersion"]) 
-                    return allData  # version info is only at the first packet.
                 if self.version < (5, 8):
                     # if tmp["robotMessageType"] == 3:
                     #     allData["VersionMessage"] = self._get_data(pdata, "!iBQbbbA bBBiAb", ("size", "type", "timestamp", "source", "robotMessageType", "projectNameSize", "projectName", "majorVersion", "minorVersion", "svnRevision", "buildDate"))
