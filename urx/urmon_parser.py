@@ -17,7 +17,7 @@ class ParsingException(Exception):
 class ParserUtils(object):
 
     def __init__(self):
-        self.logger = logging.getLogger("ursecmon")
+        self.logger = logging.getLogger("parser")
         self.version = (0, 0)
 
     def parse(self, data):
