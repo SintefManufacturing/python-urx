@@ -74,7 +74,7 @@ class ParserUtils(object):
                 if self.version < (5, 8):
                     allData["LaserPointer(OBSOLETE)"] = self._get_data(pdata, "iBddd", ("size", "type"))
                 else:
-                    allData["KinematicsInfo"] = self._get_data(pdata, "!iBLLLLLL dddddd dddddd dddddd dddddd L", ("size", "type",
+                    allData["KinematicsInfo"] = self._get_data(pdata, "!iBIIIIII dddddd dddddd dddddd dddddd I", ("size", "type",
                     "cheksum0","cheksum1","cheksum2","cheksum3","cheksum4","cheksum5",
                     "DHtheta0","DHtheta1","DHtheta2","DHtheta3","DHtheta4","DHtheta5",
                     "DHa0","DHa1","DHa2","DHa3","DHa4","DHa5",
@@ -82,7 +82,7 @@ class ParserUtils(object):
                     "Dhalpha0","Dhalpha1","Dhalpha2","Dhalpha3","Dhalpha4","Dhalpha5",
                     "calibration_status"))
             elif ptype == 6:
-                allData["ConfigurationData"] = self._get_data(pdata, "!iBdddddddddddd dddddddddddd ddddd dddddd dddddd dddddd dddddd llll", 
+                allData["ConfigurationData"] = self._get_data(pdata, "!iBdddddddddddd dddddddddddd ddddd dddddd dddddd dddddd dddddd iiii", 
                 ("size", "type", 
                 "jointMinLimit0", "jointMaxLimit0", "jointMinLimit1", "jointMaxLimit1", "jointMinLimit2", "jointMaxLimit2", "jointMinLimit3", "jointMaxLimit3", 
                 "jointMinLimit4", "jointMaxLimit4", "jointMinLimit5", "jointMaxLimit5",
@@ -103,7 +103,7 @@ class ParserUtils(object):
             elif ptype == 10: # and self.version >= (3, 2):
                 continue  # This is safety data. Also used only internally.
             elif ptype == 11 and self.version >= (5, 8):
-                allData["ToolCommunicationInfo"] = self._get_data(pdata, "!iB?lllff", ("size", "type", "toolCommunicationisEnabled", "baudRate", "parity", "stopBits", "RxIdleChars", "TxIdleChars"))
+                allData["ToolCommunicationInfo"] = self._get_data(pdata, "!iB?iiiff", ("size", "type", "toolCommunicationisEnabled", "baudRate", "parity", "stopBits", "RxIdleChars", "TxIdleChars"))
             elif ptype == 12 and self.version >= (5, 8):
                 allData["ToolModeInfo"] = self._get_data(pdata, "!iBBBB", ("size", "type", "outputMode", "output0", "output1"))
             elif ptype == 20:
