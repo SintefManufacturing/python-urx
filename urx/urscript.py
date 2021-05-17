@@ -148,6 +148,10 @@ class URScript(object):
         self.add_line_to_program(msg)
         self._sync()
 
+    def _socket_get_var2var(self, var, varout, socket_name, prefix = ''):
+        msg = "{}{} = socket_get_var(\"{}\",\"{}\")".format(prefix, varout, var, socket_name)
+        self.add_line_to_program(msg)
+
     def _sync(self):
         msg = "sync()"
         self.add_line_to_program(msg)
