@@ -2,15 +2,9 @@ import urx
 import time
 import logging
 
+r = urx.Robot("localhost", use_rt=True, urFirm=5.1)
 
 if __name__ == "__main__":
-    while 1:
-        try:
-            r = urx.Robot("192.168.137.129", use_rt=True, urFirm=5.1)
-            break
-        except:
-            pass
-
     logging.basicConfig(level=logging.INFO)
     while 1:
         try:
