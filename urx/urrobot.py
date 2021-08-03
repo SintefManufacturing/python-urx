@@ -348,6 +348,28 @@ class URRobot(object):
         """
         return self.movex("servoc", tpose, acc=acc, vel=vel, wait=wait, relative=relative, threshold=threshold)
 
+    def servoj(self, tjoints, acc=0.01, vel=0.01, t=0.1, lookahead_time=0.2, gain=100, wait=True, relative=False, threshold=None):
+        """
+        Send a servoj command to the robot. See URScript documentation.
+        """
+        if relative:
+            l = self.getj()
+            tjoints = [v + l[i] for i, v in enumerate(tjoints)]
+        prog = self._format_servo("servoj", tjoints, acc=acc, vel=vel, t=t, lookahead_time=lookahead_time, gain=gain)
+        self.send_program(prog)
+        if wait:
+            self._wait_for_move(tjoints[:6], threshold=threshold, joints=True)
+            return self.getj()
+
+    def _format_servo(self, command, tjoints, acc=0.01, vel=0.01, t=0.1, lookahead_time=0.2, gain=100, prefix=""):
+        tjoints = [round(i, self.max_float_length) for i in tjoints]
+        tjoints.append(acc)
+        tjoints.append(vel)
+        tjoints.append(t)
+        tjoints.append(lookahead_time)
+        tjoints.append(gain)
+        return "{}({}[{},{},{},{},{},{}], a={}, v={}, t={}, lookahead_time={}, gain={})".format(command, prefix, *tjoints)
+
     def _format_move(self, command, tpose, acc, vel, radius=0, prefix=""):
         tpose = [round(i, self.max_float_length) for i in tpose]
         tpose.append(acc)
