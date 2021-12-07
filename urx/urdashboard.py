@@ -12,11 +12,16 @@ class dashboard(object):
 
     def __init__(self,
                  robot):
-        self.robot = robot
+#        print(type(robot))
+        if type(robot) == str:
+            robIP = robot
+        else:
+            robIP = robot.IP
+        #self.robot = robot
         self.logger = logging.getLogger(u"dashboard")
         self.buff_size = 1024
         self._socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self._socket.connect((robot.IP, SOCKET_PORT))
+        self._socket.connect((robIP, SOCKET_PORT))
         reply = self._receive_ascii_bytes(self._socket)
         assert reply.startswith("Connected")
 

@@ -15,6 +15,7 @@ import logging
 import socket
 import time
 from .urmon_parser import ParsingException, ParserUtils 
+from urdashboard import dashboard
 
 __author__ = "Olivier Roulet-Dubonnet"
 __copyright__ = "Copyright 2011-2013, Sintef Raufoss Manufacturing"
@@ -53,6 +54,7 @@ class SecondaryMonitor(Thread):
 
     def __init__(self, host):
         Thread.__init__(self)
+        self.dash = dashboard(host)
         self.logger = logging.getLogger("ursecmon")
         self._parser = ParserUtils()
         self._dict = {}
@@ -72,6 +74,8 @@ class SecondaryMonitor(Thread):
         try:
             self.wait()  # make sure we got some data before someone calls us
         except Exception as ex:
+            print("Secmon Thread is killed.")
+            self.dash.unlock()
             self.close()
             raise ex
 
@@ -204,8 +208,9 @@ class SecondaryMonitor(Thread):
             else:
                 isProtectiveStopped = self._dict["RobotModeData"]["isSecurityStopped"]
             if isProtectiveStopped is True:
+                #pass
                 raise ProtectiveStopException("Protective stopped")
-
+                
     def get_cartesian_info(self, wait=False):
         if wait:
             self.wait()
@@ -223,6 +228,19 @@ class SecondaryMonitor(Thread):
             self.wait()
         with self._dictLock:
             return self._dict.copy()
+
+    def get_tcp(self, wait=False):
+        if wait:
+            self.wait()
+        with self._dictLock:
+            v = []
+            v.append(self._dict['CartesianInfo']['tcpOffsetX'])
+            v.append(self._dict['CartesianInfo']['tcpOffsetY'])
+            v.append(self._dict['CartesianInfo']['tcpOffsetZ'])
+            v.append(self._dict['CartesianInfo']['tcpOffsetRx'])
+            v.append(self._dict['CartesianInfo']['tcpOffsetRy'])
+            v.append(self._dict['CartesianInfo']['tcpOffsetRz'])
+            return v
 
     def get_joint_data(self, wait=False):
         if wait:
@@ -307,4 +325,5 @@ class SecondaryMonitor(Thread):
         if self._s_secondary:
             with self._prog_queue_lock:
                 self._s_secondary.close()
+                print("Secmon is closed......")
                 

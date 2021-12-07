@@ -40,6 +40,9 @@ class Robot(URRobot):
         if isinstance(tcp, m3d.Transform):
             tcp = tcp.pose_vector
         URRobot.set_tcp(self, tcp)
+        _tcp = [0, 0, 0, 0, 0, 0]
+        while not (_tcp == tcp):
+            _tcp = URRobot.get_tcp(self)
 
     def set_csys(self, transform):
         """

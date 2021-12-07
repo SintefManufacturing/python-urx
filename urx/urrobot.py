@@ -7,9 +7,11 @@ http://support.universal-robots.com/URRobot/RemoteAccess
 import logging
 import numbers
 import collections
+import time
 
 from urx import urrtmon
 from urx import ursecmon
+
 
 __author__ = "Olivier Roulet-Dubonnet"
 __copyright__ = "Copyright 2011-2015, Sintef Raufoss Manufacturing"
@@ -97,6 +99,13 @@ class URRobot(object):
         if wait==True, waits for next packet before returning
         """
         return self.rtmon.getTCFForce(wait)
+
+    def get_tcp(self, wait=True):
+        """
+        return measured TCP offset
+        if wait==True, waits for next packet before returning
+        """
+        return self.secmon.get_tcp()
 
     def get_force(self, wait=True):
         """
@@ -551,3 +560,35 @@ class URRobot(object):
         Move down in csys z
         """
         self.up(-z, acc, vel)
+    
+    def bump(self, x=0, y=0, z=0, backoff=0.1):
+        if x==0 and y==0 and z==0:
+            return
+        relpos = [x, y, z, 0, 0, 0]
+        d = ursecmon.__file__.split("\\")
+        mypath = ""
+        for st in range(len(d)-1):
+            mypath = mypath+d[st]+"\\"
+        f = open(f"{mypath}checkdistance.script", "r")
+        dt = f.readlines()
+        mystr = ""
+        for st in dt:
+            mm = st            
+            if "__replace__" in st:
+                st = mm.replace("__replace__", f"{relpos}")
+            if "__backoff__" in st:
+                st = mm.replace("__backoff__", f"{backoff}")
+            mystr = mystr + st
+        self.send_program(mystr)
+        timeout = 1
+        wait = True
+        t0 = time.time()
+        while not self.is_program_running():
+            if (time.time()-t0) > timeout:
+                raise RobotException(
+                'Program does not get started.')
+        while wait:
+            wait = self.is_program_running()
+            time.sleep(0.01)
+        newpos = self.getl()
+        return newpos
