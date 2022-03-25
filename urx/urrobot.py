@@ -6,7 +6,11 @@ http://support.universal-robots.com/URRobot/RemoteAccess
 
 import logging
 import numbers
-import collections
+
+try:
+    from collections.abc import Sequence
+except ImportError:
+    from collections import Sequence
 
 from urx import urrtmon
 from urx import ursecmon
@@ -452,7 +456,7 @@ class URRobot(object):
         if isinstance(vel, numbers.Number):
             # Make 'vel' a sequence
             vel = len(pose_list) * [vel]
-        elif not isinstance(vel, collections.Sequence):
+        elif not isinstance(vel, Sequence):
             raise RobotException(
                 'movexs: "vel" must be a single number or a sequence!')
         # Check for adequate number of speeds
@@ -464,7 +468,7 @@ class URRobot(object):
         if isinstance(radius, numbers.Number):
             # Make 'radius' a sequence
             radius = len(pose_list) * [radius]
-        elif not isinstance(radius, collections.Sequence):
+        elif not isinstance(radius, Sequence):
             raise RobotException(
                 'movexs: "radius" must be a single number or a sequence!')
         # Ensure that last pose a stopping pose.
