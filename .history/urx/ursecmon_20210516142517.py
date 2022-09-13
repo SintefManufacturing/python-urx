@@ -138,22 +138,14 @@ class SecondaryMonitor(Thread):
             rmode = 0
             if self._parser.version >= (3, 0):
                 rmode = 7
-                if self._parser.version >= (5, 8):
-                    if self._dict["RobotModeData"]["robotMode"] == rmode \
-                            and self._dict["RobotModeData"]["isRealRobotEnabled"] is True \
-                            and self._dict["RobotModeData"]["isEmergencyStopped"] is False \
-                            and self._dict["RobotModeData"]["isProtectiveStopped"] is False \
-                            and self._dict["RobotModeData"]["isRealRobotConnected"] is True \
-                            and self._dict["RobotModeData"]["isRobotPowerOn"] is True:
-                        self.running = True
-                else:
-                    if self._dict["RobotModeData"]["robotMode"] == rmode \
-                            and self._dict["RobotModeData"]["isRealRobotEnabled"] is True \
-                            and self._dict["RobotModeData"]["isEmergencyStopped"] is False \
-                            and self._dict["RobotModeData"]["isSecurityStopped"] is False \
-                            and self._dict["RobotModeData"]["isRobotConnected"] is True \
-                            and self._dict["RobotModeData"]["isPowerOnRobot"] is True:
-                        self.running = True                    
+
+            if self._dict["RobotModeData"]["robotMode"] == rmode \
+                    and self._dict["RobotModeData"]["isRealRobotEnabled"] is True \
+                    and self._dict["RobotModeData"]["isEmergencyStopped"] is False \
+                    and self._dict["RobotModeData"]["isProtectiveStopped"] is False \
+                    and self._dict["RobotModeData"]["isRealRobotConnected"] is True \
+                    and self._dict["RobotModeData"]["isRobotPowerOn"] is True:
+                self.running = True
             else:
                 if self.running:
                     self.logger.error("Robot not running: " + str(self._dict["RobotModeData"]))
@@ -199,11 +191,7 @@ class SecondaryMonitor(Thread):
                 raise TimeoutException("Did not receive a valid data packet from robot in {}".format(e))
             if tstamp == self.lastpacket_timestamp:
                 raise TimeoutException("Did not receive a valid data packet from robot in {}".format(timeout))
-            if self._parser.version >= (5, 8):
-                isProtectiveStopped = self._dict["RobotModeData"]["isProtectiveStopped"]
-            else:
-                isProtectiveStopped = self._dict["RobotModeData"]["isSecurityStopped"]
-            if isProtectiveStopped is True:
+            if self._dict["RobotModeData"]["isProtectiveStopped"] is True:
                 raise ProtectiveStopException("Protective stopped")
 
     def get_cartesian_info(self, wait=False):
@@ -293,11 +281,7 @@ class SecondaryMonitor(Thread):
         if wait:
             self.wait()
         with self._dictLock:
-            if self._parser.version >= (5, 8):
-                val = self._dict["RobotModeData"]["isProtectiveStopped"]
-            else:
-                val = self._dict["RobotModeData"]["isSecurityStopped"]
-            return val
+            return self.secmon._dict["RobotModeData"]["isProtectiveStopped"]
 
     def close(self):
         self._trystop = True

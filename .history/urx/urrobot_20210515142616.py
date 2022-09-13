@@ -6,11 +6,7 @@ http://support.universal-robots.com/URRobot/RemoteAccess
 
 import logging
 import numbers
-
-try:
-    from collections.abc import Sequence
-except ImportError:
-    from collections import Sequence
+import collections
 
 from urx import urrtmon
 from urx import ursecmon
@@ -73,10 +69,6 @@ class URRobot(object):
         necessary running a program, it might be idle)
         """
         return self.secmon.running
-
-    def is_protective_stopped(self):
-        ''' cehck if robot is protective stopped. This was called the safetyStopped'''
-        return self.secmon.is_protective_stopped()
 
     def is_program_running(self):
         """
@@ -250,13 +242,6 @@ class URRobot(object):
         """
         prog = "set_analog_out(%s, %s)" % (output, val)
         self.send_program(prog)
-        
-    def set_standard_analog_out(self, output, val):
-        """
-        set analog output, val is a float
-        """
-        prog = "set_standard_analog_out(%s, %s)" % (output, val)
-        self.send_program(prog)
 
     def set_tool_voltage(self, val):
         """
@@ -363,28 +348,6 @@ class URRobot(object):
         """
         return self.movex("servoc", tpose, acc=acc, vel=vel, wait=wait, relative=relative, threshold=threshold)
 
-    def servoj(self, tjoints, acc=0.01, vel=0.01, t=0.1, lookahead_time=0.2, gain=100, wait=True, relative=False, threshold=None):
-        """
-        Send a servoj command to the robot. See URScript documentation.
-        """
-        if relative:
-            l = self.getj()
-            tjoints = [v + l[i] for i, v in enumerate(tjoints)]
-        prog = self._format_servo("servoj", tjoints, acc=acc, vel=vel, t=t, lookahead_time=lookahead_time, gain=gain)
-        self.send_program(prog)
-        if wait:
-            self._wait_for_move(tjoints[:6], threshold=threshold, joints=True)
-            return self.getj()
-
-    def _format_servo(self, command, tjoints, acc=0.01, vel=0.01, t=0.1, lookahead_time=0.2, gain=100, prefix=""):
-        tjoints = [round(i, self.max_float_length) for i in tjoints]
-        tjoints.append(acc)
-        tjoints.append(vel)
-        tjoints.append(t)
-        tjoints.append(lookahead_time)
-        tjoints.append(gain)
-        return "{}({}[{},{},{},{},{},{}], a={}, v={}, t={}, lookahead_time={}, gain={})".format(command, prefix, *tjoints)
-
     def _format_move(self, command, tpose, acc, vel, radius=0, prefix=""):
         tpose = [round(i, self.max_float_length) for i in tpose]
         tpose.append(acc)
@@ -467,7 +430,7 @@ class URRobot(object):
         if isinstance(vel, numbers.Number):
             # Make 'vel' a sequence
             vel = len(pose_list) * [vel]
-        elif not isinstance(vel, Sequence):
+        elif not isinstance(vel, collections.Sequence):
             raise RobotException(
                 'movexs: "vel" must be a single number or a sequence!')
         # Check for adequate number of speeds
@@ -479,7 +442,7 @@ class URRobot(object):
         if isinstance(radius, numbers.Number):
             # Make 'radius' a sequence
             radius = len(pose_list) * [radius]
-        elif not isinstance(radius, Sequence):
+        elif not isinstance(radius, collections.Sequence):
             raise RobotException(
                 'movexs: "radius" must be a single number or a sequence!')
         # Ensure that last pose a stopping pose.

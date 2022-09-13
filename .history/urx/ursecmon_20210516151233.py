@@ -138,7 +138,7 @@ class SecondaryMonitor(Thread):
             rmode = 0
             if self._parser.version >= (3, 0):
                 rmode = 7
-                if self._parser.version >= (5, 8):
+                if self._parser.version >= (5.8):
                     if self._dict["RobotModeData"]["robotMode"] == rmode \
                             and self._dict["RobotModeData"]["isRealRobotEnabled"] is True \
                             and self._dict["RobotModeData"]["isEmergencyStopped"] is False \
@@ -199,7 +199,7 @@ class SecondaryMonitor(Thread):
                 raise TimeoutException("Did not receive a valid data packet from robot in {}".format(e))
             if tstamp == self.lastpacket_timestamp:
                 raise TimeoutException("Did not receive a valid data packet from robot in {}".format(timeout))
-            if self._parser.version >= (5, 8):
+            if self._parser.version >= (5.8):
                 isProtectiveStopped = self._dict["RobotModeData"]["isProtectiveStopped"]
             else:
                 isProtectiveStopped = self._dict["RobotModeData"]["isSecurityStopped"]
@@ -293,10 +293,10 @@ class SecondaryMonitor(Thread):
         if wait:
             self.wait()
         with self._dictLock:
-            if self._parser.version >= (5, 8):
-                val = self._dict["RobotModeData"]["isProtectiveStopped"]
+            if self._parser.version >= (5,8):
+                val = self.secmon._dict["RobotModeData"]["isProtectiveStopped"]
             else:
-                val = self._dict["RobotModeData"]["isSecurityStopped"]
+                val = self.secmon._dict["RobotModeData"]["isSecurityStopped"]
             return val
 
     def close(self):
