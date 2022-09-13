@@ -7,15 +7,6 @@ Both the 'secondary port' interface and the real-time/matlab interface of the UR
 urx was primarily developed by [Olivier Roulet-Dubonnet](https://github.com/oroulet) for [Sintef Raufoss Manufacturing](http://www.sintef.no/manufacturing/).
 
 
-
-# Install
-
-The easiest is probably to use pip:
-```
-pip install urx
-```
-
-
 # Example use:
 
 ```python
