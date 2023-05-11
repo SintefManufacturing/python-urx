@@ -106,6 +106,8 @@ class ParserUtils(object):
                 allData["ToolCommunicationInfo"] = self._get_data(pdata, "!iB?iiiff", ("size", "type", "toolCommunicationisEnabled", "baudRate", "parity", "stopBits", "RxIdleChars", "TxIdleChars"))
             elif ptype == 12 and self.version >= (5, 8):
                 allData["ToolModeInfo"] = self._get_data(pdata, "!iBBBB", ("size", "type", "outputMode", "output0", "output1"))
+            elif ptype == 13 and self.version >= (5, 8):
+                allData["SingularityInfo"] = self._get_data(pdata, "!iBBB", ("size", "type", "singularitySeverity", "singularityType"))
             elif ptype == 20:
                 # this is for version 5.8
                 self.logger.info("ptype 20 is read.")

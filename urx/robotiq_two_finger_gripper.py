@@ -165,13 +165,15 @@ class Robotiq_Two_Finger_Gripper(object):
                                  socket_name=self.socket_name)
 
         # Set input and output voltage ranges
-        urscript._set_analog_inputrange(0, 0)
-        urscript._set_analog_inputrange(1, 0)
-        urscript._set_analog_inputrange(2, 0)
-        urscript._set_analog_inputrange(3, 0)
-        urscript._set_analog_outputdomain(0, 0)
-        urscript._set_analog_outputdomain(1, 0)
-        urscript._set_tool_voltage(0)
+        # When the gripper is directly connected without a wrist camera, comment these lines out.
+        # You may need to uncomment these when it is connected through a Robotiq wrist camera.
+        # urscript._set_analog_inputrange(0, 0)
+        # urscript._set_analog_inputrange(1, 0)
+        # urscript._set_analog_inputrange(2, 0)
+        # urscript._set_analog_inputrange(3, 0)
+        # urscript._set_analog_outputdomain(0, 0)
+        # urscript._set_analog_outputdomain(1, 0)
+        # urscript._set_tool_voltage(0)
         urscript._set_runstate_outputs()
 
         # Set payload, speed and force

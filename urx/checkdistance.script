@@ -1,0 +1,39 @@
+def myprog():
+    set_runstate_outputs([])
+    global move_thread_flag_5=0
+    thread move_thread_5():
+        enter_critical
+        move_thread_flag_5 = 1
+        movel(pose_add(get_target_tcp_pose(), p__replace__), a=0.01, v=0.01)
+        move_thread_flag_5 = 2
+        exit_critical
+    end
+    move_thread_flag_5 = 0
+    move_thread_han_5 = run move_thread_5()
+    while (True):
+        local targetTcpDirection=get_target_tcp_speed()
+        local stepsToRetract=tool_contact(direction=targetTcpDirection)
+        if (stepsToRetract > 0):
+        kill move_thread_han_5
+        stopl(3.0)
+        local backTrackMovement=get_actual_joint_positions_history(stepsToRetract)
+        local contactPose=get_forward_kin(backTrackMovement)
+        local posDir=[targetTcpDirection[0],targetTcpDirection[1],targetTcpDirection[2]]
+        local retractTo=contactPose
+        if (norm(posDir) > 1e-6):
+            local normalizedPosDir=normalize(posDir)
+            local additionalRetraction=p[normalizedPosDir[0] * __backoff__, normalizedPosDir[1] * __backoff__, normalizedPosDir[2] * __backoff__, 0, 0, 0]
+            retractTo = pose_sub(contactPose, additionalRetraction)
+        end
+        movel(retractTo, a=3.0, v=0.1)
+        $ 6 "Until (tool_contact_detection)"
+        break
+        end
+        sleep(1.0E-10)
+        if (move_thread_flag_5 > 1):
+        join move_thread_han_5
+        break
+        end
+        sync()
+    end
+end

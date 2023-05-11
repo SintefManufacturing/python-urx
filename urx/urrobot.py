@@ -12,7 +12,6 @@ import time
 from urx import urrtmon
 from urx import ursecmon
 
-
 __author__ = "Olivier Roulet-Dubonnet"
 __copyright__ = "Copyright 2011-2015, Sintef Raufoss Manufacturing"
 __license__ = "LGPLv3"
@@ -353,6 +352,8 @@ class URRobot(object):
     def movel(self, tpose, acc=0.01, vel=0.01, wait=True, relative=False, threshold=None):
         """
         Send a movel command to the robot. See URScript documentation.
+        tpose should be a list.
+        if Robot in robot.py is used, it redefines movex so tpose can either a list or a m3d.Transform 
         """
         return self.movex("movel", tpose, acc=acc, vel=vel, wait=wait, relative=relative, threshold=threshold)
 

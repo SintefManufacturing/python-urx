@@ -90,6 +90,9 @@ class SecondaryMonitor(Thread):
 
     def connect(self):
         secondary_port = 30002    # Secondary client interface on Universal Robots
+        #self._s_secondary = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        #self._s_secondary.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        #self._s_secondary.bind((self.host, secondary_port))
         self._s_secondary = socket.create_connection((self.host, secondary_port), timeout=2.0)
 
     def send_program(self, prog):
@@ -165,6 +168,7 @@ class SecondaryMonitor(Thread):
             with self._dataEvent:
                 # print("X: new data")
                 self._dataEvent.notifyAll()
+        self._s_secondary.close()
 
     def _get_data(self):
         """
@@ -318,12 +322,13 @@ class SecondaryMonitor(Thread):
             return val
 
     def close(self):
-        self._trystop = True
+        self.stop()
         self.join()
         # with self._dataEvent: #wake up any thread that may be waiting for data before we close. Should we do that?
-        # self._dataEvent.notifyAll()
+        #self._dataEvent.notifyAll()
         if self._s_secondary:
             with self._prog_queue_lock:
                 self._s_secondary.close()
                 print("Secmon is closed......")
-                
+    def stop(self):
+        self._trystop = True

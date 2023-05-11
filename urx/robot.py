@@ -33,6 +33,26 @@ class Robot(URRobot):
         pose = m3d.Transform(pose)
         return pose.dist(target)
 
+    def calc_position_in_base(self, pos):
+        # pos is a coordinate in tcp coordinate.
+        # returns a coordinate in the base coordinate.
+        trans = self.get_pose()
+        if not isinstance(pos, m3d.Transform):
+            pos = m3d.Transform([pos[0], pos[1], pos[2], 0, 0, 0])
+        n = pos*trans
+        return n
+
+    def calc_position_in_tool(self, pos):
+        # pos is a coordinate in base coordinate.
+        # returns the coordinate in the tool coordinate.
+        trans = self.get_pose()
+        v = trans.get_pose_vector()
+        trans.invert()
+        if not isinstance(pos, m3d.Transform):
+            pos = m3d.Transform([pos[0], pos[1], pos[2], v[3], v[4], v[5]])
+        n = pos*trans
+        return n
+
     def set_tcp(self, tcp):
         """
         set robot flange to tool tip transformation
@@ -41,7 +61,7 @@ class Robot(URRobot):
             tcp = tcp.pose_vector
         URRobot.set_tcp(self, tcp)
         _tcp = [0, 0, 0, 0, 0, 0]
-        while not (_tcp == tcp):
+        while not (np.round(np.array(_tcp), 5) == np.round(np.array(tcp), 5)).all():
             _tcp = URRobot.get_tcp(self)
 
     def set_csys(self, transform):
@@ -125,7 +145,7 @@ class Robot(URRobot):
 
     def get_pose(self, wait=False, _log=True):
         """
-        get current transform from base to to tcp
+        get current transform from base to tcp
         """
         pose = URRobot.getl(self, wait, _log)
         trans = self.csys.inverse * m3d.Transform(pose)
@@ -173,6 +193,7 @@ class Robot(URRobot):
 
     def movex(self, command, pose, acc=0.01, vel=0.01, wait=True, relative=False, threshold=None):
         """
+        This redefines movex in the URRobot.
         Send a move command to the robot. since UR robotene have several methods this one
         sends whatever is defined in 'command' string
         """

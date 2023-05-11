@@ -16,18 +16,18 @@ __license__ = "LGPLv3"
 
 class PrimaryMonitor(object):
 
-    def __init__(self, host):
+    def __init__(self, host, port=30011):
         self.logger = logging.getLogger("primarymon")
         self._parser = ParserUtils()
         self._dict = {}
         self._dataqueue = bytes()
         self.host = host
         self.lastpacket_timestamp = 0
-        self.connect()
+        self.connect(primary_port=port)
         self._get_version()
 
-    def connect(self):
-        primary_port = 30011    # Primary client interface on Universal Robots
+    def connect(self, primary_port):
+        #primary_port = 30011    # Primary client interface on Universal Robots
         self._s_primary = socket.create_connection((self.host, primary_port), timeout=2.0)
 
     def get_data(self):
