@@ -134,7 +134,7 @@ class URRTMonitor(threading.Thread):
                 return self._qTarget
     getTarget = q_target
 
-    def tcf_pose(self, wait=False, timestamp=False, ctrlTimestamp=False):
+    def tcp_pose(self, wait=False, timestamp=False, ctrlTimestamp=False):
         """ Return the tool pose values."""
         if wait:
             self.wait()
@@ -149,21 +149,21 @@ class URRTMonitor(threading.Thread):
                 return ret
             else:
                 return tcf
-    getTCF = tcf_pose
+    getTCP = tcp_pose
 
-    def tcf_force(self, wait=False, timestamp=False):
+    def tcp_force(self, wait=False, timestamp=False):
         """ Get the tool force. The returned tool force is a
         six-vector of three forces and three moments."""
         if wait:
             self.wait()
         with self._dataAccess:
             # tcf = self._fwkin(self._qActual)
-            tcf_force = self._tcp_force
+            tcp_force = self._tcp_force
             if timestamp:
-                return self._timestamp, tcf_force
+                return self._timestamp, tcp_force
             else:
-                return tcf_force
-    getTCFForce = tcf_force
+                return tcp_force
+    getTCPForce = tcp_force
 
     def joint_temperature(self, wait=False, timestamp=False):
         """ Get the joint temperature."""
@@ -269,7 +269,7 @@ class URRTMonitor(threading.Thread):
             # if (self._timestamp - self._last_ts) > 0.010:
             # self.logger.warning("Error the we did not receive a packet for {}s ".format( self._timestamp - self._last_ts))
             # self._last_ts = self._timestamp
-            self._ctrlTimestamp = np.array(unp[0])
+            self._ctrlTimestamp = unp[0]
             if self._last_ctrl_ts != 0 and (
                     self._ctrlTimestamp -
                     self._last_ctrl_ts) > 0.010:
