@@ -1,8 +1,10 @@
 '''
 Module for implementing a UR controller real-time monitor over socket port 30003.
 Confer http://support.universal-robots.com/Technical/RealTimeClientInterface
-Note: The packet lenght given in the web-page is 740. What is actually received from the controller is 692. It is assumed that the motor currents, the last group of 48 bytes, are not send.
+Note: The packet lenght given in the web-page is 740. What is actually received from the controller is 692. 
+It is assumed that the motor currents, the last group of 48 bytes, are not send.
 Originally Written by Morten Lind
+Parsing for Firmware 5.9 is added by Byeongdu Lee
 '''
 import logging
 import socket
@@ -31,6 +33,7 @@ class URRTMonitor(threading.Thread):
     rtstruct540 = struct.Struct('>d6d6d6d6d6d6d6d6d18d')
 
     rtstruct5_1 = struct.Struct('>d1d6d6d6d6d6d6d6d6d6d6d6d6d6d6d1d6d1d1d1d6d1d6d3d6d1d1d1d1d1d1d1d6d1d1d3d3d')
+    rtstruct5_9 = struct.Struct('>d6d6d6d6d6d6d6d6d6d6d6d6d6d6d1d6d1d1d1d6d1d6d3d6d1d1d1d1d1d1d1d6d1d1d3d3d1d')
 
     def __init__(self, urHost, urFirm=None):
         threading.Thread.__init__(self)
@@ -56,6 +59,19 @@ class URRTMonitor(threading.Thread):
         self._main_voltage = None
         self._robot_voltage = None
         self._robot_current = None
+        self._qdTarget = None
+        self._qddTarget = None
+        self._iTarget = None
+        self._mTarget = None
+        self._qdActual = None
+        self._tcp_speed = None
+        self._tcp = None
+        self._robot_mode = None
+        self._joint_modes = None
+        self._digital_outputs = None
+        self._program_state = None
+        self._safety_status = None
+
         self.__recvTime = 0
         self._last_ctrl_ts = 0
         # self._last_ts = 0
@@ -233,6 +249,8 @@ class URRTMonitor(threading.Thread):
         if self.urFirm is not None:
             if self.urFirm == 5.1:
                 unp = self.rtstruct5_1.unpack(payload[:self.rtstruct5_1.size])
+            if self.urFirm == 5.9:
+                unp = self.rtstruct5_9.unpack(payload[:self.rtstruct5_9.size])
         else:
             if pkgsize >= 692:
                 unp = self.rtstruct692.unpack(payload[:self.rtstruct692.size])
@@ -271,6 +289,20 @@ class URRTMonitor(threading.Thread):
                 self._main_voltage = unp[121]
                 self._robot_voltage = unp[122]
                 self._robot_current = unp[123]
+
+            if self.urFirm>= 5.9:
+                self._qdTarget = np.array(unp[7:13])
+                self._qddTarget = np.array(unp[13:19])
+                self._iTarget = np.array(unp[19:25])
+                self._mTarget = np.array(unp[25:31])
+                self._tcp_speed = np.array(unp[61:67])
+                self._joint_current = np.array(unp[49:55])
+                self._joint_voltage = np.array(unp[124:130])
+                self._robot_mode = unp[94]
+                self._joint_modes = np.array(unp[95:101])
+                self._digital_outputs = unp[130]
+                self._program_state = unp[131]
+                self._safety_status = unp[138]
 
             if self._csys:
                 with self._csys_lock:
@@ -337,14 +369,22 @@ class URRTMonitor(threading.Thread):
                 ctrltimestamp=self._ctrlTimestamp,
                 qActual=self._qActual,
                 qTarget=self._qTarget,
+                qdActual=self._qdActual,
+                qdTarget=self._qdTarget,
                 tcp=self._tcp,
                 tcp_force=self._tcp_force,
+                tcp_speed=self._tcp_speed,
                 joint_temperature=self._joint_temperature,
                 joint_voltage=self._joint_voltage,
                 joint_current=self._joint_current,
+                joint_modes=self._joint_modes,
+                robot_modes=self._robot_mode,
                 main_voltage=self._main_voltage,
                 robot_voltage=self._robot_voltage,
-                robot_current=self._robot_current)
+                robot_current=self._robot_current,
+                digital_outputs=self._digital_outputs,
+                program_state=self._program_state,
+                safety_status=self._safety_status)
     getALLData = get_all_data
 
     def stop(self):
