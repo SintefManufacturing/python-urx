@@ -3,7 +3,7 @@ build
 .idea/
 .history/
 *.pyc
-dist/urx-0.11.0-py3.10.egg
+dist/*.egg
 urx.egg-info/dependency_links.txt
 urx.egg-info/PKG-INFO
 urx.egg-info/requires.txt
