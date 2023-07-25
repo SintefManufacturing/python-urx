@@ -254,6 +254,27 @@ class URRobot(object):
         prog = "set_tool_voltage(%s)" % (val)
         self.send_program(prog)
 
+    def set_tool_digital_in(self, input_id):
+        """
+        set voltage to be delivered to the tool, val is 0, 12 or 24
+        """
+        prog = "set_tool_digital_in(%s)" % (input_id)
+        self.send_program(prog)
+
+    def set_tool_digital_out(self, input_id, signal_level):
+        """
+        set voltage to be delivered to the tool, val is 0, 12 or 24
+        """
+        prog = "set_tool_digital_out(%s, %s)" % (input_id, signal_level)
+        self.send_program(prog)
+
+    def set_tool_communication(self, enabled=True, baud_rate=9600, parity=0, stop_bits=1, rx_idle_chars=1.0, tx_idle_chars=3.5):
+        """
+        set voltage to be delivered to the tool, val is 0, 12 or 24
+        """
+        prog = "set_tool_communication(%s, %s, %s, %s, %s, %s)" % (enabled, baud_rate, parity, stop_bits, rx_idle_chars, tx_idle_chars)
+        self.send_program(prog)
+
     def _wait_for_move(self, target, threshold=None, timeout=5, joints=False):
         """
         wait for a move to complete. Unfortunately there is no good way to know when a move has finished
