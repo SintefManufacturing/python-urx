@@ -255,13 +255,6 @@ class URRobot(object):
         prog = "set_tool_voltage(%s)" % (val)
         self.send_program(prog)
 
-    # def get_tool_digital_in(self, input_id):
-    #     """
-    #     get tool digitial input
-    #     """
-    #     prog = "get_tool_digital_in(%s)" % (input_id)
-    #     self.send_program(prog)
-
     def set_tool_digital_out(self, input_id, signal_level):
         """
         set tool digital output
