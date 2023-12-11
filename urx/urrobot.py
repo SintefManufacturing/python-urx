@@ -354,18 +354,30 @@ class URRobot(object):
         """
         Send a movel command to the robot. See URScript documentation.
         """
+        try:
+            tpose = tpose.array
+        except:
+            pass
         return self.movex("movel", tpose, acc=acc, vel=vel, wait=wait, relative=relative, threshold=threshold)
 
     def movep(self, tpose, acc=0.01, vel=0.01, wait=True, relative=False, threshold=None):
         """
         Send a movep command to the robot. See URScript documentation.
         """
+        try:
+            tpose = tpose.array
+        except:
+            pass
         return self.movex("movep", tpose, acc=acc, vel=vel, wait=wait, relative=relative, threshold=threshold)
 
     def servoc(self, tpose, acc=0.01, vel=0.01, wait=True, relative=False, threshold=None):
         """
         Send a servoc command to the robot. See URScript documentation.
         """
+        try:
+            tpose = tpose.array
+        except:
+            pass
         return self.movex("servoc", tpose, acc=acc, vel=vel, wait=wait, relative=relative, threshold=threshold)
 
     def servoj(self, tjoints, acc=0.01, vel=0.01, t=0.1, lookahead_time=0.2, gain=100, wait=True, relative=False, threshold=None):
@@ -391,6 +403,10 @@ class URRobot(object):
         return "{}({}[{},{},{},{},{},{}], a={}, v={}, t={}, lookahead_time={}, gain={})".format(command, prefix, *tjoints)
 
     def _format_move(self, command, tpose, acc, vel, radius=0, prefix=""):
+        try:
+            tpose = tpose.array
+        except:
+            pass
         tpose = [round(i, self.max_float_length) for i in tpose]
         tpose.append(acc)
         tpose.append(vel)
@@ -402,6 +418,10 @@ class URRobot(object):
         Send a move command to the robot. since UR robotene have several methods this one
         sends whatever is defined in 'command' string
         """
+        try:
+            tpose = tpose.array
+        except:
+            pass
         if relative:
             l = self.getl()
             tpose = [v + l[i] for i, v in enumerate(tpose)]
