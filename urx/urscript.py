@@ -150,6 +150,30 @@ class URScript(object):
         msg = "socket_send_byte(\"{}\",\"{}\")".format(str(byte), socket_name)  # noqa
         self.add_line_to_program(msg)
         self._sync()
+
+    def _get_tool_digital_in(self, input_id):
+        assert(input_id in [0, 1])
+        msg = "get_standard_digital_in({})".format(input_id)
+        self.add_line_to_program(msg)
+
+    def _set_tool_digital_out(self, input_id, signal_level):
+        assert(input_id in [0, 1])
+        assert(signal_level in [True, False])        
+        msg = "set_standard_digital_out({}, {})".format(input_id, signal_level)
+        self.add_line_to_program(msg)
+
+    def _set_tool_communication(self, enabled=True, baud_rate=9600, parity=0, stop_bits=1, rx_idle_chars=1.5, tx_idle_chars=3.5):
+        # stop_bits:Thenumberofstopbits(int).Validvalues:1,2. 
+        # rx_idle_chars:AmountofcharstheRXunitinthetoolshouldwaitbeforemarkingamessage asover/sendingittothePC(float).Validvalues:min=1.0max=40.0. 
+        # tx_idle_chars:
+        # set_tool_communication(True,115200,1,2,1.0,3.5)
+        # :9600,19200,38400,57600,115200, 1000000,2000000,5000000
+        assert(baud_rate in [9600,19200,38400,57600,115200, 1000000,2000000,5000000])
+        assert(parity in [0, 1, 2])
+        assert(stop_bits in [1, 2])
+        assert(enabled in [True, False])      
+        msg = "set_tool_communication({}, {}, {}, {}, {}, {})".format(enabled, baud_rate, parity, stop_bits, rx_idle_chars, tx_idle_chars)
+        self.add_line_to_program(msg)
         
     def _sync(self):
         msg = "sync()"

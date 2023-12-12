@@ -251,7 +251,23 @@ class URRobot(object):
         """
         set voltage to be delivered to the tool, val is 0, 12 or 24
         """
+        assert(val in [0, 12, 24])
         prog = "set_tool_voltage(%s)" % (val)
+        self.send_program(prog)
+
+    def set_tool_digital_out(self, input_id, signal_level):
+        """
+        set tool digital output
+        """
+        assert(input_id in [0, 1])
+        prog = "set_tool_digital_out(%s, %s)" % (input_id, signal_level)
+        self.send_program(prog)
+
+    def set_tool_communication(self, enabled=True, baud_rate=9600, parity=0, stop_bits=1, rx_idle_chars=1.0, tx_idle_chars=3.5):
+        """
+        set tool RS485 communication protocol.
+        """
+        prog = "set_tool_communication(%s, %s, %s, %s, %s, %s)" % (enabled, baud_rate, parity, stop_bits, rx_idle_chars, tx_idle_chars)
         self.send_program(prog)
 
     def _wait_for_move(self, target, threshold=None, timeout=5, joints=False):
@@ -338,18 +354,30 @@ class URRobot(object):
         """
         Send a movel command to the robot. See URScript documentation.
         """
+        try:
+            tpose = tpose.array
+        except:
+            pass
         return self.movex("movel", tpose, acc=acc, vel=vel, wait=wait, relative=relative, threshold=threshold)
 
     def movep(self, tpose, acc=0.01, vel=0.01, wait=True, relative=False, threshold=None):
         """
         Send a movep command to the robot. See URScript documentation.
         """
+        try:
+            tpose = tpose.array
+        except:
+            pass
         return self.movex("movep", tpose, acc=acc, vel=vel, wait=wait, relative=relative, threshold=threshold)
 
     def servoc(self, tpose, acc=0.01, vel=0.01, wait=True, relative=False, threshold=None):
         """
         Send a servoc command to the robot. See URScript documentation.
         """
+        try:
+            tpose = tpose.array
+        except:
+            pass
         return self.movex("servoc", tpose, acc=acc, vel=vel, wait=wait, relative=relative, threshold=threshold)
 
     def servoj(self, tjoints, acc=0.01, vel=0.01, t=0.1, lookahead_time=0.2, gain=100, wait=True, relative=False, threshold=None):
@@ -375,6 +403,10 @@ class URRobot(object):
         return "{}({}[{},{},{},{},{},{}], a={}, v={}, t={}, lookahead_time={}, gain={})".format(command, prefix, *tjoints)
 
     def _format_move(self, command, tpose, acc, vel, radius=0, prefix=""):
+        try:
+            tpose = tpose.array
+        except:
+            pass
         tpose = [round(i, self.max_float_length) for i in tpose]
         tpose.append(acc)
         tpose.append(vel)
@@ -386,6 +418,10 @@ class URRobot(object):
         Send a move command to the robot. since UR robotene have several methods this one
         sends whatever is defined in 'command' string
         """
+        try:
+            tpose = tpose.array
+        except:
+            pass
         if relative:
             l = self.getl()
             tpose = [v + l[i] for i, v in enumerate(tpose)]
