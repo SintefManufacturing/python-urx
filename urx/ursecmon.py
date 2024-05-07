@@ -72,8 +72,8 @@ class ParserUtils(object):
                     self.version = (3, 2)
                     allData['RobotModeData'] = self._get_data(pdata, "!IBQ???????BBdd", ("size", "type", "timestamp", "isRobotConnected", "isRealRobotEnabled", "isPowerOnRobot", "isEmergencyStopped", "isSecurityStopped", "isProgramRunning", "isProgramPaused", "robotMode", "controlMode", "speedFraction", "speedScaling", "speedFractionLimit"))
                 elif psize == 47:
-                    self.version = (3, 5)
-                    allData['RobotModeData'] = self._get_data(pdata, "!IBQ???????BBddc", ("size", "type", "timestamp", "isRobotConnected", "isRealRobotEnabled", "isPowerOnRobot", "isEmergencyStopped", "isSecurityStopped", "isProgramRunning", "isProgramPaused", "robotMode", "controlMode", "speedFraction", "speedScaling", "speedFractionLimit", "reservedByUR"))
+                    self.version = max(self.version,(3, 5))
+                    allData['RobotModeData'] = self._get_data(pdata, "!IBQ???????BBdddc", ("size", "type", "timestamp", "isRobotConnected", "isRealRobotEnabled", "isPowerOnRobot", "isEmergencyStopped", "isSecurityStopped", "isProgramRunning", "isProgramPaused", "robotMode", "controlMode", "speedFraction", "speedScaling", "speedFractionLimit", "reservedByUR"))
                 else:
                     allData["RobotModeData"] = self._get_data(pdata, "!iBQ???????Bd", ("size", "type", "timestamp", "isRobotConnected", "isRealRobotEnabled", "isPowerOnRobot", "isEmergencyStopped", "isSecurityStopped", "isProgramRunning", "isProgramPaused", "robotMode", "speedFraction"))
             elif ptype == 1:
@@ -89,7 +89,15 @@ class ParserUtils(object):
                 else:
                     allData["CartesianInfo"] = self._get_data(pdata, "iBdddddddddddd", ("size", "type", "X", "Y", "Z", "Rx", "Ry", "Rz", "tcpOffsetX", "tcpOffsetY", "tcpOffsetZ", "tcpOffsetRx", "tcpOffsetRy", "tcpOffsetRz"))
             elif ptype == 5:
-                allData["LaserPointer(OBSOLETE)"] = self._get_data(pdata, "iBddd", ("size", "type"))
+                if self.version >= (3,6):
+                    tmpstr = ["size", "type"]
+                    for name in ["cheksum", "DHtheta", "DHa", "Dhd", "Dhalpha"]:
+                        for i in range(0,6):
+                            tmpstr += ["%s%s" % (name,i)]
+                    tmpstr += ["calibration_status"]
+                    allData['KinematicsInfo'] = self._get_data(pdata,"!iB IIIIII dddddd dddddd dddddd dddddd I", tmpstr)
+                else:
+                    allData["LaserPointer(OBSOLETE)"] = self._get_data(pdata, "iBddd", ("size", "type"))
             elif ptype == 3:
 
                 if self.version >= (3, 0):
@@ -110,11 +118,29 @@ class ParserUtils(object):
             #     allData["varMessage"] = self._get_data(pdata, "!iBQbb iiBAcAc", ("size", "type", "timestamp", "source", "robotMessageType", "code", "argument", "titleSize", "messageTitle", "messageText"))
             # elif ptype == 7:
             #     allData["keyMessage"] = self._get_data(pdata, "!iBQbb iiBAcAc", ("size", "type", "timestamp", "source", "robotMessageType", "code", "argument", "titleSize", "messageTitle", "messageText"))
-
+            elif ptype == 6:
+                fmt = "iB dddddddddddd dddddddddddd ddddd dddddd dddddd dddddd dddddd IIII"
+                tmpstr = ["size", "type"]
+                for i in range(0,6):
+                    tmpstr += ["jointMinLimit%s" % i, "jointMaxLimit%s" % i]
+                for i in range(0,6):
+                    tmpstr += ["jointMaxSpeed%s" % i, "jointMaxAcceleration%s" % i]
+                tmpstr += ["vJointDefault","aJointDefault","vToolDefault","aToolDefault","eqRadius"]
+                for name in ["DHa","Dhd","DHalpha","DHtheta"]:
+                    for i in range(0,6):
+                        tmpstr += ["%s%s" % (name,i)]
+                tmpstr += ["masterboardVersion","controllerBoxType","robotType","robotSubType"]
+                allData["ConfigurationData"] = self._get_data(pdata, fmt, tmpstr)
             elif ptype == 20:
                 tmp = self._get_data(pdata, "!iB Qbb", ("size", "type", "timestamp", "source", "robotMessageType"))
                 if tmp["robotMessageType"] == 3:
-                    allData["VersionMessage"] = self._get_data(pdata, "!iBQbb bAbBBiAb", ("size", "type", "timestamp", "source", "robotMessageType", "projectNameSize", "projectName", "majorVersion", "minorVersion", "svnRevision", "buildDate"))
+                    tmpVersion = self._get_data(pdata, "!iBQbb bABB", ("size", "type", "timestamp", "source", "robotMessageType", "projectNameSize", "projectName", "majorVersion", "minorVersion"))
+                    if (tmpVersion['majorVersion'],tmpVersion['minorVersion']) >= (3, 12):
+                        fmt = "!iBQbb bABBiiA"
+                        self.version = (tmpVersion['majorVersion'],tmpVersion['minorVersion'])
+                    else: 
+                        fmt = "!iBQbb bAbBBiAb"
+                    allData["VersionMessage"] = self._get_data(pdata, fmt, ("size", "type", "timestamp", "source", "robotMessageType", "projectNameSize", "projectName", "majorVersion", "minorVersion", "bugfixVersion", "buildNumber", "buildDate"))
                 elif tmp["robotMessageType"] == 6:
                     allData["robotCommMessage"] = self._get_data(pdata, "!iBQbb iiAc", ("size", "type", "timestamp", "source", "robotMessageType", "code", "argument", "messageText"))
                 elif tmp["robotMessageType"] == 1:
@@ -129,6 +155,8 @@ class ParserUtils(object):
                     allData["keyMessage"] = self._get_data(pdata, "!iBQbb iiBAcAc", ("size", "type", "timestamp", "source", "robotMessageType", "code", "argument", "titleSize", "messageTitle", "messageText"))
                 elif tmp["robotMessageType"] == 5:
                     allData["keyMessage"] = self._get_data(pdata, "!iBQbb iiAc", ("size", "type", "timestamp", "source", "robotMessageType", "code", "argument", "messageText"))
+                elif tmp["robotMessageType"] == 12:
+                    allData["unknownMessage"] = self._get_data(pdata, "!iBQbb iib", ("size", "type", "timestamp", "source", "robotMessageType", "something1", "something2", "messageEnd?"))
                 else:
                     self.logger.debug("Message type parser not implemented %s", tmp)
             else:
@@ -154,8 +182,9 @@ class ParserUtils(object):
                 j += 1
             elif f == "A":  # we got an array
                 # first we need to find its size
-                if j == len(fmt) - 2:  # we are last element, size is the rest of data in packet
+                if j >= len(fmt) - 2:  #added to account for later versions which don't add extra
                     arraysize = len(tmpdata)
+                    j += 1
                 else:  # size should be given in last element
                     asn = names[i - 1]
                     if not asn.endswith("Size"):
@@ -165,7 +194,7 @@ class ParserUtils(object):
                 d[names[i]] = tmpdata[0:arraysize]
                 # print "Array is ", names[i], d[names[i]]
                 tmpdata = tmpdata[arraysize:]
-                j += 2
+                j += 1
                 i += 1
             else:
                 fmtsize = struct.calcsize(fmt[j])
@@ -206,7 +235,7 @@ class ParserUtils(object):
         while True:
             if len(data) >= 5:
                 psize, ptype = self.get_header(data)
-                if psize < 5 or psize > 2000 or ptype != 16:
+                if psize < 5 or psize > 2000 or (ptype != 20 and ptype != 16):  
                     data = data[1:]
                     counter += 1
                     if counter > limit:
