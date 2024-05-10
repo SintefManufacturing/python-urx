@@ -1,0 +1,15 @@
+COPYING
+README.md
+setup.py
+urx/__init__.py
+urx/robot.py
+urx/robotiq_two_finger_gripper.py
+urx/urrobot.py
+urx/urrtmon.py
+urx/urscript.py
+urx/ursecmon.py
+urx.egg-info/PKG-INFO
+urx.egg-info/SOURCES.txt
+urx.egg-info/dependency_links.txt
+urx.egg-info/requires.txt
+urx.egg-info/top_level.txt

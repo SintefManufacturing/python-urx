@@ -102,7 +102,11 @@ class Robot(URRobot):
         """
         self.logger.debug("Setting pose to %s", trans.pose_vector)
         t = self.csys * trans
-        pose = URRobot.movex(self, command, t.pose_vector, acc=acc, vel=vel, wait=wait, threshold=threshold)
+        if hasattr(t.pose_vector,'__iter__'):
+            t = t.pose_vector
+        else:
+            t = t.pose_vector.array
+        pose = URRobot.movex(self, command, t, acc=acc, vel=vel, wait=wait, threshold=threshold)
         if pose is not None:
             return self.csys.inverse * m3d.Transform(pose)
 
@@ -208,7 +212,10 @@ class Robot(URRobot):
         return current transformation from tcp to current csys
         """
         t = self.get_pose(wait, _log)
-        return t.pose_vector.tolist()
+        if hasattr(t.pose_vector,'tolist'):
+            return t.pose_vector.tolist()
+        else:
+            return t.pose_vector.get_array().tolist()
 
     def set_gravity(self, vector):
         if isinstance(vector, m3d.Vector):
