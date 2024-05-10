@@ -1,0 +1,21 @@
+Metadata-Version: 2.1
+Name: urx
+Version: 0.11.0
+Summary: Python library to control an UR robot
+Home-page: https://github.com/oroulet/python-urx
+Author: Olivier Roulet-Dubonnet
+Author-email: olivier.roulet@gmail.com
+License: GNU Lesser General Public License v3
+Platform: UNKNOWN
+Classifier: Programming Language :: Python
+Classifier: Programming Language :: Python :: 3
+Classifier: Development Status :: 4 - Beta
+Classifier: Intended Audience :: Developers
+Classifier: Operating System :: OS Independent
+Classifier: Topic :: System :: Hardware :: Hardware Drivers
+Classifier: Topic :: Software Development :: Libraries :: Python Modules
+Provides: urx
+License-File: COPYING
+
+UNKNOWN
+
