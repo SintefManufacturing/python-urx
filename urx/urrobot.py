@@ -375,6 +375,8 @@ class URRobot(object):
         return "{}({}[{},{},{},{},{},{}], a={}, v={}, t={}, lookahead_time={}, gain={})".format(command, prefix, *tjoints)
 
     def _format_move(self, command, tpose, acc, vel, radius=0, prefix=""):
+        if hasattr(tpose, "array"):
+            tpose = tpose.array
         tpose = [round(i, self.max_float_length) for i in tpose]
         tpose.append(acc)
         tpose.append(vel)
@@ -386,6 +388,8 @@ class URRobot(object):
         Send a move command to the robot. since UR robotene have several methods this one
         sends whatever is defined in 'command' string
         """
+        if hasattr(tpose, "array"):
+            tpose = tpose.array
         if relative:
             l = self.getl()
             tpose = [v + l[i] for i, v in enumerate(tpose)]
