@@ -92,34 +92,80 @@ csys = rob.new_csys_from_xpy() #  generate a new csys from 3 points: X, origin, 
 rob.set_csys(csys)
 ```
 
+# Supported Grippers
 
-# Robotiq Gripper
+## Robotiq Gripper
 
 urx can also control a Robotiq gripper attached to the UR robot.  The robotiq class was primarily developed by [Mark Silliman](https://github.com/markwsilliman).
 
-## Example use:
+### Example use:
 
 ```python
 import sys
 import urx
-from urx.robotiq_two_finger_gripper import Robotiq_Two_Finger_Gripper
+from urx.gripper import Robotiq_Two_Finger_Gripper
 
 if __name__ == '__main__':
-	rob = urx.Robot("192.168.0.100")
-	robotiqgrip = Robotiq_Two_Finger_Gripper()
+    rob = urx.Robot("192.168.0.100")
+    robotiqgrip = Robotiq_Two_Finger_Gripper()
 
-	if(len(sys.argv) != 2):
-		print "false"
-		sys.exit()
+    if len(sys.argv) != 2:
+        print "false"
+        sys.exit()
 
-	if(sys.argv[1] == "close") :
-		robotiqgrip.close_gripper()
-	if(sys.argv[1] == "open") :
-		robotiqgrip.open_gripper()
+    if sys.argv[1] == "close":
+        robotiqgrip.close_gripper()
+    if sys.argv[1] == "open":
+        robotiqgrip.open_gripper()
 
-	rob.send_program(robotiqgrip.ret_program_to_run())
+    rob.send_program(robotiqgrip.ret_program_to_run())
 
-	rob.close()
-	print "true"
-	sys.exit()
+    rob.close()
+    print "true"
+    sys.exit()
 ```
+
+## OnRobot RG2 Gripper
+
+urx can control an RG2 gripper as well. The class was primarily developed by [Moritz Fey](https://github.com/Mofeywalker).
+
+### Example use:
+
+```python
+import sys
+import urx
+from urx.gripper import OnRobotGripperRG2
+
+if __name__ == '__main__':
+    rob = urx.Robot("192.168.0.100")
+    gripper = OnRobotGripperRG2(rob)
+
+    if len(sys.argv) != 2:
+        print "false"
+        sys.exit()
+
+    if sys.argv[1] == "close":
+        gripper.close_gripper()
+    if sys.argv[1] == "open":
+        gripper.open_gripper()
+
+    rob.close()
+    print "true"
+    sys.exit()
+```
+
+Various parameters can be controlled in the open and close functions. The parameters that can be set are:
+
+```python
+    gripper.open_gripper(
+        target_width=110,  # Width in mm, 110 is fully open
+        target_force=40,  # Maximum force applied in N, 40 is maximum
+        payload=0.5,  # Payload in kg
+        set_payload=False,  # If any payload is attached
+        depth_compensation=False,  # Whether to compensate for finger depth
+        slave=False,  # Is this gripper the master or slave gripper?
+        wait=2  # Wait up to 2s for movement
+    )
+```
+
+The parameters are the same for opening and closing the gripper.

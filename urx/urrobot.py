@@ -334,6 +334,17 @@ class URRobot(object):
             self._wait_for_move(joints[:6], threshold=threshold, joints=True)
             return self.getj()
 
+    def movej_to_pose(self, tpose, acc=0.1, vel=0.05, wait=True, relative=False, threshold=None):
+        if relative:
+            l = self.getl()
+            tpose = [v + l[i] for i, v in enumerate(tpose)]
+        prog = self._format_move("movej", tpose, acc, vel, prefix="p")
+        print(prog)
+        self.send_program(prog)
+        if wait:
+            self._wait_for_move(tpose[:6], threshold=threshold, joints=False)
+            return self.getj()
+
     def movel(self, tpose, acc=0.01, vel=0.01, wait=True, relative=False, threshold=None):
         """
         Send a movel command to the robot. See URScript documentation.
