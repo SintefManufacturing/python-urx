@@ -23,8 +23,8 @@ class Robot(URRobot):
     and includes support for setting a reference coordinate system
     """
 
-    def __init__(self, host, use_rt=False, urFirm=None):
-        URRobot.__init__(self, host, use_rt, urFirm)
+    def __init__(self, host, use_rt=False):
+        URRobot.__init__(self, host, use_rt)
         self.csys = m3d.Transform()
 
     def _get_lin_dist(self, target):
@@ -102,11 +102,7 @@ class Robot(URRobot):
         """
         self.logger.debug("Setting pose to %s", trans.pose_vector)
         t = self.csys * trans
-        if hasattr(t.pose_vector,'__iter__'):
-            t = t.pose_vector
-        else:
-            t = t.pose_vector.array
-        pose = URRobot.movex(self, command, t, acc=acc, vel=vel, wait=wait, threshold=threshold)
+        pose = URRobot.movex(self, command, t.pose_vector, acc=acc, vel=vel, wait=wait, threshold=threshold)
         if pose is not None:
             return self.csys.inverse * m3d.Transform(pose)
 
@@ -191,10 +187,15 @@ class Robot(URRobot):
         to robot make the robot stop
         """
         new_poses = []
-        for pose in pose_list:
-            t = self.csys * m3d.Transform(pose)
-            pose = t.pose_vector
-            new_poses.append(pose)
+        if command == "movej":
+            # For joint moves, do NOT transform the joint positions
+            new_poses = pose_list
+        else:
+            # For Cartesian moves, transform as before
+            for pose in pose_list:
+                t = self.csys * m3d.Transform(pose)
+                pose = t.pose_vector
+                new_poses.append(pose)
         return URRobot.movexs(self, command, new_poses, acc, vel, radius, wait=wait, threshold=threshold)
 
     def movel_tool(self, pose, acc=0.01, vel=0.01, wait=True, threshold=None):
@@ -212,11 +213,8 @@ class Robot(URRobot):
         return current transformation from tcp to current csys
         """
         t = self.get_pose(wait, _log)
-        if hasattr(t.pose_vector,'tolist'):
-            return t.pose_vector.tolist()
-        else:
-            return t.pose_vector.get_array().tolist()
-
+        return t.pose_vector.tolist()
+    
     def set_gravity(self, vector):
         if isinstance(vector, m3d.Vector):
             vector = vector.list
@@ -232,7 +230,7 @@ class Robot(URRobot):
         self.csys = m3d.Transform()
 
         print("A new coordinate system will be defined from the next three points")
-        print("Firs point is X, second Origin, third Y")
+        print("First point is X, second Origin, third Y")
         print("Set it as a new reference by calling myrobot.set_csys(new_csys)")
         input("Move to first point and click Enter")
         # we do not use get_pose so we avoid rounding values
@@ -285,33 +283,36 @@ class Robot(URRobot):
 
     @property
     def rx(self):
-        return 0
+        p = self.getl()
+        return p[3]
 
     @rx.setter
     def rx(self, val):
-        p = self.get_pose()
-        p.orient.rotate_xb(val)
-        self.set_pose(p)
+        p = self.getl()
+        p[3] = val
+        self.movel(p)
 
     @property
     def ry(self):
-        return 0
+        p = self.getl()
+        return p[4]
 
     @ry.setter
     def ry(self, val):
-        p = self.get_pose()
-        p.orient.rotate_yb(val)
-        self.set_pose(p)
+        p = self.getl()
+        p[4] = val
+        self.movel(p)
 
     @property
     def rz(self):
-        return 0
+        p = self.getl()
+        return p[5]
 
     @rz.setter
     def rz(self, val):
-        p = self.get_pose()
-        p.orient.rotate_zb(val)
-        self.set_pose(p)
+        p = self.getl()
+        p[5] = val
+        self.movel(p)
 
     @property
     def x_t(self):
