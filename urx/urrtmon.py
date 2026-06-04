@@ -35,7 +35,7 @@ class URRTMonitor(threading.Thread):
     rtstruct5_1 = struct.Struct('>d1d6d6d6d6d6d6d6d6d6d6d6d6d6d6d1d6d1d1d1d6d1d6d3d6d1d1d1d1d1d1d1d6d1d1d3d3d')
     rtstruct5_9 = struct.Struct('>d6d6d6d6d6d6d6d6d6d6d6d6d6d6d1d6d1d1d1d6d1d6d3d6d1d1d1d1d1d1d1d6d1d1d3d3d1d')
 
-    def __init__(self, urHost, urFirm=None):
+    def __init__(self, urHost):
         threading.Thread.__init__(self)
         self.logger = logging.getLogger(self.__class__.__name__)
         self.daemon = True
@@ -45,7 +45,7 @@ class URRTMonitor(threading.Thread):
         self._rtSock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self._rtSock.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
         self._urHost = urHost
-        self.urFirm = urFirm
+        self.urFirm = None
         # Package data variables
         self._timestamp = None
         self._ctrlTimestamp = None

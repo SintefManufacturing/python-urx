@@ -1,2 +1,2 @@
-math3d
+math3d==3.3
 numpy
