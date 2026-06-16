@@ -2,30 +2,37 @@ import socket
 import threading
 import socketserver
 import time
+import six
+
+# Python2.x must use 'unicode'
+if six.PY2:
+    str = unicode
+
 
 class RequestHandler(socketserver.BaseRequestHandler):
-    #def __init__(self, *args, **kwargs):
-        #print(self, *args, **kwargs)
-        #print("Got connection from {}".format( self.client_address[0]) )
-        #socketserver.BaseRequestHandler.__init__(self, *args, **kwargs)
+    # def __init__(self, *args, **kwargs):
+        # print(self, *args, **kwargs)
+        # print("Got connection from {}".format( self.client_address[0]) )
+        # socketserver.BaseRequestHandler.__init__(self, *args, **kwargs)
 
     def handle(self):
         while True:
             data = str(self.request.recv(1024), 'ascii')
             cur_thread = threading.current_thread()
-            print("{} received {} from {}".format(cur_thread.name, data, self.client_address) )
+            print("{} received {} from {}".format(cur_thread.name, data, self.client_address))
             if data == "":
                 return
 
-        #when this methods returns, the connection to the client closes
+        # when this methods returns, the connection to the client closes
 
     def setup(self):
-        print("Got new connection from {}".format( self.client_address) )
+        print("Got new connection from {}".format(self.client_address))
         self.server.handlers.append(self)
 
     def finish(self):
-        print("Connection from {} lost".format( self.client_address) )
+        print("Connection from {} lost".format(self.client_address))
         self.server.handlers.remove(self)
+
 
 class Server(socketserver.ThreadingMixIn, socketserver.TCPServer):
     def init(self):
@@ -57,7 +64,7 @@ class FakeRobot(object):
             packet = f.read()
             f.close()
             while True:
-                time.sleep(0.09) #The real robot published data 10 times a second
+                time.sleep(0.09)  # The real robot published data 10 times a second
                 for handler in server.handlers:
                     handler.request.sendall(packet)
         finally:
@@ -68,6 +75,3 @@ class FakeRobot(object):
 if __name__ == "__main__":
     r = FakeRobot()
     r.run()
-
-
-
