@@ -306,7 +306,7 @@ class URRTMonitor(threading.Thread):
 
             if self._csys:
                 with self._csys_lock:
-                    # might be a godd idea to remove dependancy on m3d
+                    # might be a godd idea to remove dependency on m3d
                     tcp = self._csys.inverse * m3d.Transform(self._tcp)
                 self._tcp = tcp.pose_vector
         if self._buffering:
